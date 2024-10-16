@@ -1,84 +1,68 @@
-<<<<<<< HEAD
-# CoinFlipApp
-Marre de perdre ton temps à lancer 300 pièces dans une partie ? Utilise CoinFlipApp et laisse la magie des flips faire le boulot à ta place !
+# Coin Flip App
+
+
+## Description
+*Marre de perdre ton temps à lancer 300 pièces dans une partie ? Utilise **CoinFlipApp** et laisse la magie des flips faire le boulot à ta place !*
+**Coin Flip App** est une application mobile conçue pour simuler des lancers de pièces, spécifiquement pensée pour les joueurs de *Magic: The Gathering*. Cette application est particulièrement utile pour les decks qui reposent sur des mécaniques de lancers de pièces, comme les decks utilisant **Yusri, Fortune’s Flame**, **Okaun, Eye of Chaos**, ou **Zndrsplt, Eye of Wisdom**. Elle prend également en charge le **Pouce de Krark** pour le double lancer.
+
+## Fonctionnalités principales :
+- **Lancer simple ou double** : Simulez un lancer de pièce avec ou sans le **Pouce de Krark**. Si un seul des deux résultats est "Win", le lancer est considéré comme un succès.
+- **Résultats visuels** :
+  - *Win* s'affiche en vert (succès).
+  - *Lose* s'affiche en rouge (échec).
+- **Arrêt au premier échec** : Une option pour effectuer des lancers de pièces jusqu'à obtenir un "Lose", pratique pour des mécaniques où un seul échec met fin à une chaîne de succès (comme pour **Okaun, Eye of Chaos** ou **Zndrsplt, Eye of Wisdom**).
+- **Gestion des lancers** : Ajoutez ou retirez des lancers à volonté et réinitialisez les résultats en un clic.
+
+## Pourquoi utiliser Coin Flip App pour Magic: The Gathering ?
+Cette application est spécifiquement conçue pour répondre aux besoins des joueurs de decks orientés vers les mécaniques de lancers de pièces dans *Magic: The Gathering*. Elle offre une solution rapide et claire pour effectuer plusieurs lancers en un minimum de temps, ce qui est particulièrement utile dans des parties avec des cartes comme :
+
+## Fonctionnalités futures
+- **Sons interactifs** : Des effets sonores pour accompagner les succès ou échecs des lancers, pour une meilleure immersion.
+- **Personnalisation visuelle** : Ajout d'animations et de styles spécifiques pour encore plus de fun.
+
+## Technologies utilisées
+- **React Native** : Framework principal pour le développement de l'application.
+- **JavaScript (ES6)** : Langage utilisé pour l'ensemble de la logique de l'application.
+
+## Installation
+
+Pour exécuter cette application localement :
+
+1. Clonez le projet :
+
+    ```bash
+    git clone https://github.com/MathieuMassot/CoinFlipApp.git
+    cd CoinFlipApp
+    ```
+
+2. Installez les dépendances :
+
+    ```bash
+    npm install
+    ```
+
+3. Exécutez l'application sur un émulateur ou appareil physique :
+
+    ```bash
+    npx react-native run-android
+    ```
+
+## Installation de l'APK
+
+Pour installer l'APK directement sur votre appareil Android :
+
+1. Générer le fichier APK avec la commande :
+
+    ```bash
+    cd android
+    ./gradlew assembleRelease
+    ```
+
+2. Transférez le fichier APK généré sur votre téléphone Android et installez-le.
+
+## Auteur
+Mathieu "Rye Smut" Massot
+
 =======
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
-
-# Getting Started
-
->**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.
-
-## Step 1: Start the Metro Server
-
-First, you will need to start **Metro**, the JavaScript _bundler_ that ships _with_ React Native.
-
-To start Metro, run the following command from the _root_ of your React Native project:
-
-```bash
-# using npm
-npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Start your Application
-
-Let Metro Bundler run in its _own_ terminal. Open a _new_ terminal from the _root_ of your React Native project. Run the following command to start your _Android_ or _iOS_ app:
-
-### For Android
-
-```bash
-# using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### For iOS
-
-```bash
-# using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up _correctly_, you should see your new app running in your _Android Emulator_ or _iOS Simulator_ shortly provided you have set up your emulator/simulator correctly.
-
-This is one way to run your app — you can also run it directly from within Android Studio and Xcode respectively.
-
-## Step 3: Modifying your App
-
-Now that you have successfully run the app, let's modify it.
-
-1. Open `App.tsx` in your text editor of choice and edit some lines.
-2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> (on Window and Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (on macOS)) to see your changes!
-
-   For **iOS**: Hit <kbd>Cmd ⌘</kbd> + <kbd>R</kbd> in your iOS Simulator to reload the app and see your changes!
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [Introduction to React Native](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
->>>>>>> b53624f (Initial commit)
+## Licence
+Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.

@@ -1,74 +1,49 @@
-# OSX
-#
-.DS_Store
-
-# Xcode
-#
-build/
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-xcuserdata
-*.xccheckout
-*.moved-aside
-DerivedData
-*.hmap
-*.ipa
-*.xcuserstate
-**/.xcode.env.local
-
-# Android/IntelliJ
-#
-build/
-.idea
-.gradle
-local.properties
-*.iml
-*.hprof
-.cxx/
-*.keystore
-!debug.keystore
-
-# node.js
-#
+# Node modules
 node_modules/
-npm-debug.log
-yarn-error.log
 
-# fastlane
-#
-# It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
-# screenshots whenever they are needed.
-# For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-**/fastlane/report.xml
-**/fastlane/Preview.html
-**/fastlane/screenshots
-**/fastlane/test_output
+# React Native
+*.env
+*.env.local
+*.env.production
+*.env.development
+*.env.test
+*.env.staging
+*.expo
+.expo-shared/
 
-# Bundle artifact
-*.jsbundle
+# Generated files
+android/.gradle/
+android/app/build/
+android/app/*.apk
+android/app/*.keystore
+ios/Pods/
+ios/build/
+ios/*.xcworkspace
+ios/DerivedData/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/*.xcuserdatad/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/xcuserdata/*.xcuserdatad/
 
-# Ruby / CocoaPods
-**/Pods/
-/vendor/bundle/
+# Packaging
+package-lock.json
+npm-shrinkwrap.json
+yarn.lock
 
-# Temporary files created by Metro to check the health of the file watcher
-.metro-health-check*
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
 
-# testing
-/coverage
-
-# Yarn
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
+# Miscellaneous
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+xcuserdata/
