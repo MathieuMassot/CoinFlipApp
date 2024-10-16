@@ -1,5 +1,5 @@
 import React, { useState } from 'react'; 
-import { View, Text, Button, FlatList, Switch, StyleSheet } from 'react-native';
+import { View, Text, Button, FlatList, Switch, StyleSheet, TouchableOpacity } from 'react-native';
 
 const CoinFlipApp = () => {
   const [numLancers, setNumLancers] = useState(0); // Nombre de lancers choisis
@@ -57,23 +57,35 @@ const CoinFlipApp = () => {
     setResults(newResults);
   };
 
+  // Bouton stylisé
+  const StyledButton = ({ title, onPress }) => (
+    <TouchableOpacity style={styles.button} onPress={onPress}>
+      <Text style={styles.buttonText}>{title}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Coin Flip Simulator</Text>
       <Text style={styles.subtitle}>©Rye_Smut</Text>
 
-      <Text>Nombre de lancers : {numLancers}</Text>
-      <Button title="Ajouter un lancer" onPress={() => setNumLancers(numLancers + 1)} />
-      <Button title="Retirer un lancer" onPress={() => setNumLancers(numLancers > 0 ? numLancers - 1 : 0)} />
-      <Button title="Réinitialiser" onPress={() => setResults([])} />
+      <Text style={styles.counterText}>Nombre de lancers : {numLancers}</Text>
+      
+      {/* Conteneur pour aligner les deux boutons sur une seule ligne */}
+      <View style={styles.buttonRow}>
+        <StyledButton title="Ajouter un lancer" onPress={() => setNumLancers(numLancers + 1)} />
+        <StyledButton title="Retirer un lancer" onPress={() => setNumLancers(numLancers > 0 ? numLancers - 1 : 0)} />
+      </View>
+
+      <StyledButton title="Réinitialiser" onPress={() => setResults([])} />
 
       <View style={styles.switchContainer}>
-        <Text>Lancer deux pièces à la fois</Text>
+        <Text style={styles.switchLabel}>Lancer deux pièces à la fois</Text>
         <Switch value={doubleCoin} onValueChange={() => setDoubleCoin(!doubleCoin)} />
       </View>
 
-      <Button title="Lancer les pièces" onPress={handleLancers} />
-      <Button title="Lancer jusqu'à un Lose" onPress={handleLancersUntilLose} />
+      <StyledButton title="Lancer les pièces" onPress={handleLancers} />
+      <StyledButton title="Lancer jusqu'à un Lose" onPress={handleLancersUntilLose} />
 
       <FlatList
         data={results}
@@ -86,6 +98,7 @@ const CoinFlipApp = () => {
       />
     </View>
   );
+
 };
 
 const styles = StyleSheet.create({
@@ -93,27 +106,61 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
+    backgroundColor: '#f5f5f5',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 7,
+    marginBottom: 10,
+    color: '#34495e',
   },
   subtitle: {
-    fontSize: 10,
-    fontWeight: 'normal',
+    fontSize: 12,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
+    color: '#7f8c8d',
+  },
+  counterText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 10,
+    color: '#2c3e50',
+  },
+  button: {
+    backgroundColor: '#3498db',
+    padding: 15,
+    marginVertical: 10,
+    borderRadius: 30,
+    alignItems: 'center',
+    shadowColor: '#2c3e50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  buttonRow: {
+    flexDirection: 'row',  // Permet d'aligner les boutons en ligne
+    justifyContent: 'space-between',  // Espace entre les boutons
+    marginVertical: 10,  // Espace vertical pour aérer un peu
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   switchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginVertical: 10,
+    marginVertical: 15,
+    paddingHorizontal: 20,
+  },
+  switchLabel: {
+    fontSize: 16,
+    color: '#34495e',
   },
   resultText: {
-    fontSize: 18,
+    fontSize: 20,
     textAlign: 'center',
     marginVertical: 5,
   },
