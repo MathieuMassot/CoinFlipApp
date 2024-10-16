@@ -1,7 +1,9 @@
 # Coin Flip App
 
+
 ## Description
-**Coin Flip App** est une application mobile conçue pour simuler des lancers de pièces, spécifiquement pensée pour les joueurs de *Magic: The Gathering*. Cette application est particulièrement utile pour les decks qui reposent sur des mécaniques de lancers de pièces, comme les decks utilisant **Yusri, Fortune’s Flame**, **Okaun, Eye of Chaos**, ou **Zndrsplt, Eye of Wisdom**. Elle prend également en charge le double lancer pour des cartes comme **Pouce de Krark**.
+*Marre de perdre ton temps à lancer 300 pièces dans une partie ? Utilise **CoinFlipApp** et laisse la magie des flips faire le boulot à ta place !*
+**Coin Flip App** est une application mobile conçue pour simuler des lancers de pièces, spécifiquement pensée pour les joueurs de *Magic: The Gathering*. Cette application est particulièrement utile pour les decks qui reposent sur des mécaniques de lancers de pièces, comme les decks utilisant **Yusri, Fortune’s Flame**, **Okaun, Eye of Chaos**, ou **Zndrsplt, Eye of Wisdom**. Elle prend également en charge le **Pouce de Krark** pour le double lancer.
 
 ## Fonctionnalités principales :
 - **Lancer simple ou double** : Simulez un lancer de pièce avec ou sans le **Pouce de Krark**. Si un seul des deux résultats est "Win", le lancer est considéré comme un succès.
@@ -46,6 +48,7 @@ Pour exécuter cette application localement :
     ```
 
 ## Installation de l'APK
+
 Pour installer l'APK directement sur votre appareil Android :
 
 1. Générer le fichier APK avec la commande :
@@ -57,9 +60,9 @@ Pour installer l'APK directement sur votre appareil Android :
 
 2. Transférez le fichier APK généré sur votre téléphone Android et installez-le.
 
-
 ## Auteur
 Mathieu "Rye Smut" Massot
 
+=======
 ## Licence
 Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
