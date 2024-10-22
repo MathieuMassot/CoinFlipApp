@@ -7,7 +7,6 @@ const CoinFlipApp = () => {
   const [numLancers, setNumLancers] = useState(0); // Nombre de lancers choisis
   const [results, setResults] = useState([]); // Résultats des lancers
   const [doubleCoin, setDoubleCoin] = useState(false); // Activer/Désactiver le double lancer
-  const [showSecret, setShowSecret] = useState(false); // Pour l'image secrète
 
   const laughSound = useRef(null);
 
@@ -37,10 +36,8 @@ const CoinFlipApp = () => {
       }
     };
 
-    // Fonction pour gérer l'affichage du "secret"
+    // Fonction pour gérer la secret feature
     const triggerSecretFeature = () => {
-      setShowSecret(true);
-
       // Jouer le son du rire à partir de laughSound.current
       if (laughSound.current) {
         laughSound.current.play((success) => {
@@ -56,6 +53,7 @@ const CoinFlipApp = () => {
     const newResults = [];
 
     for (let i = 0; i < numLancers; i++) {
+      // Simule un lancer de pièce (ou deux si "doubleCoin" est activé)
       if (doubleCoin) {
         const result1 = flipCoin();
         const result2 = flipCoin();
@@ -67,7 +65,7 @@ const CoinFlipApp = () => {
       }
     }
 
-    setResults(newResults);
+    setResults(newResults); // Mise à jour des résultats
     checkForSecret(newResults); // Vérifie la condition secrète
   };
 
@@ -92,11 +90,13 @@ const CoinFlipApp = () => {
         newResults.push({ text: `Lancer ${i}: ${result}`, result });
       }
 
+      // Arrêter une fois qu'un "Lose" est obtenu
       if (finalResult === 'Lose') {
         lost = true;
       }
     }
 
+    // Mise à jour des résultats
     setResults(newResults);
   };
 
