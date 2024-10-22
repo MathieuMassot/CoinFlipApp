@@ -1,14 +1,68 @@
 /* eslint-disable react/no-unstable-nested-components */
-import React, { useState } from 'react';
-import { View, Text, Button, FlatList, Switch, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, FlatList, Switch, StyleSheet, TouchableOpacity, ImageBackground, Image, Animated } from 'react-native';
+import Sound from 'react-native-sound'; // Importer react-native-sound
+import * as Animatable from 'react-native-animatable'; // Pour l'animation d'image
 
 const CoinFlipApp = () => {
   const [numLancers, setNumLancers] = useState(0); // Nombre de lancers choisis
   const [results, setResults] = useState([]); // Résultats des lancers
   const [doubleCoin, setDoubleCoin] = useState(false); // Activer/Désactiver le double lancer
+  const [showSecret, setShowSecret] = useState(false); // Pour l'image secrète
+  const animationValue = new Animated.Value(0); // Animation de zoom
+
+  const laughSound = useRef(null);
+
+  useEffect(() => {
+    // Charger le son du rire
+    laughSound.current = new Sound('laugh.mp3', Sound.MAIN_BUNDLE, (error) => {
+      if (error) {
+        console.log('Erreur lors du chargement du son', error);
+      }
+    });
+
+    // Nettoyage du son à la fin
+    return () => {
+      if (laughSound.current) {
+        laughSound.current.release();
+      }
+    };
+  }, []);
 
   // Fonction pour simuler un lancer de pièce
   const flipCoin = () => (Math.random() < 0.5 ? 'Win' : 'Lose');
+
+    // Fonction pour vérifier si tous les résultats sont "Win"
+    const checkForSecret = (newResults) => {
+      if (numLancers === 5 && newResults.every(result => result.result === 'Win')) {
+        triggerSecretFeature();
+      }
+    };
+
+      // Fonction pour gérer l'affichage du "secret"
+      const triggerSecretFeature = () => {
+        setShowSecret(true);
+
+      // Jouer le son du rire à partir de laughSound.current
+      if (laughSound.current) {
+        laughSound.current.play((success) => {
+          if (!success) {
+            console.log('Erreur lors de la lecture du son');
+          }
+        });
+      }
+
+    // Lancer l'animation de zoom
+    Animated.timing(animationValue, {
+      toValue: 1,
+      duration: 5000, // Durée de l'animation
+      useNativeDriver: true,
+    }).start(() => {
+      // Réinitialiser après l'animation
+      setShowSecret(false);
+      animationValue.setValue(0);
+    });
+  };
 
   // Fonction pour lancer les pièces
   const handleLancers = () => {
@@ -27,6 +81,7 @@ const CoinFlipApp = () => {
     }
 
     setResults(newResults);
+    checkForSecret(newResults); // Vérifie la condition secrète
   };
 
   // Fonction pour lancer jusqu'à obtenir un "Lose"
@@ -140,6 +195,15 @@ const CoinFlipApp = () => {
             )}
             keyExtractor={(item, index) => index.toString()}
           />
+          {/* Animation secrète */}
+          {showSecret && (
+            <Animated.View style={[styles.secretContainer, { transform: [{ scale: animationValue }] }]}>
+              <Image
+                source={{ uri: 'https://cdn11.bigcommerce.com/s-641uhzxs7j/images/stencil/1280x1280/products/320053/383013/AMH260ns__05394.1643242659.jpg' }} // Remplace par ton image
+                style={styles.secretImage}
+              />
+            </Animated.View>
+          )}
         </View>
       </ImageBackground>
     </View>
@@ -239,6 +303,21 @@ const styles = StyleSheet.create({
   loseText: {
     color: '#e74c3c', // Rouge pour les défaites
     fontWeight: 'bold',
+  },
+   // Styles pour l'animation secrète
+   secretContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Fond semi-transparent
+  },
+  secretImage: {
+    width: 200,
+    height: 200,
   },
 });
 

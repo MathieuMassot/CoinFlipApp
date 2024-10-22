@@ -26,6 +26,55 @@
           "isPureCxxDependency": false
         }
       }
+    },
+    "react-native-reanimated": {
+      "root": "W:\\Documents\\code_app\\CoinFlipApp\\node_modules\\react-native-reanimated",
+      "name": "react-native-reanimated",
+      "platforms": {
+        "ios": {
+          "podspecPath": "W:\\Documents\\code_app\\CoinFlipApp\\node_modules\\react-native-reanimated\\RNReanimated.podspec",
+          "version": "3.15.5",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "W:\\Documents\\code_app\\CoinFlipApp\\node_modules\\react-native-reanimated\\android",
+          "packageImportPath": "import com.swmansion.reanimated.ReanimatedPackage;",
+          "packageInstance": "new ReanimatedPackage()",
+          "buildTypes": [],
+          "libraryName": "rnreanimated",
+          "componentDescriptors": [],
+          "cmakeListsPath": "W:/Documents/code_app/CoinFlipApp/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
+    "react-native-sound": {
+      "root": "W:\\Documents\\code_app\\CoinFlipApp\\node_modules\\react-native-sound",
+      "name": "react-native-sound",
+      "platforms": {
+        "ios": {
+          "podspecPath": "W:\\Documents\\code_app\\CoinFlipApp\\node_modules\\react-native-sound\\RNSound.podspec",
+          "version": "0.11.2",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "W:\\Documents\\code_app\\CoinFlipApp\\node_modules\\react-native-sound\\android",
+          "packageImportPath": "import com.zmxv.RNSound.RNSoundPackage;",
+          "packageInstance": "new RNSoundPackage()",
+          "buildTypes": [],
+          "componentDescriptors": [],
+          "cmakeListsPath": "W:/Documents/code_app/CoinFlipApp/node_modules/react-native-sound/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
     }
   },
   "commands": [
