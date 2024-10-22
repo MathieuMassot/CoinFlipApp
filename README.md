@@ -14,7 +14,7 @@
 - **Gestion des lancers** : Ajoutez ou retirez des lancers à volonté et réinitialisez les résultats en un clic.
 
 ## Pourquoi utiliser Coin Flip App pour Magic: The Gathering ?
-Cette application est spécifiquement conçue pour répondre aux besoins des joueurs de decks orientés vers les mécaniques de lancers de pièces dans *Magic: The Gathering*. Elle offre une solution rapide et claire pour effectuer plusieurs lancers en un minimum de temps, ce qui est particulièrement utile dans des parties avec des cartes comme :
+Cette application est spécifiquement conçue pour répondre aux besoins des joueurs de decks orientés vers les mécaniques de lancers de pièces dans *Magic: The Gathering*. Elle offre une solution rapide et claire pour effectuer plusieurs lancers en un minimum de temps.
 
 ## Technologies utilisées
 - **React Native** : Framework principal pour le développement de l'application.
