@@ -27,29 +27,6 @@ Cette application est spécifiquement conçue pour répondre aux besoins des jou
 
 ## Installation
 
-Pour exécuter cette application localement :
-
-1. Clonez le projet :
-
-    ```bash
-    git clone https://github.com/MathieuMassot/CoinFlipApp.git
-    cd CoinFlipApp
-    ```
-
-2. Installez les dépendances :
-
-    ```bash
-    npm install
-    ```
-
-3. Exécutez l'application sur un émulateur ou appareil physique :
-
-    ```bash
-    npx react-native run-android
-    ```
-
-## Installation
-
 ### Prérequis
 
 - Node.js (version X ou supérieure) : [télécharger Node.js](https://nodejs.org/)
