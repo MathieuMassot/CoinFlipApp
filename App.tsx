@@ -1,3 +1,4 @@
+import { useKeepAwake } from '@sayem314/react-native-keep-awake';
 import StyledButton from './components/StyledButton';
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, FlatList, Switch, StyleSheet, ImageBackground } from 'react-native';
@@ -10,6 +11,7 @@ const formatFlip = (item: Flip, index: number) =>
     : `Lancer ${index + 1}: ${item.result}`;
 
 const CoinFlipApp = () => {
+  useKeepAwake();
   const [numLancers, setNumLancers] = useState(0); // Nombre de lancers choisis
   const [results, setResults] = useState<Flip[]>([]);
   const [doubleCoin, setDoubleCoin] = useState(false); // Activer/Désactiver le double lancer
