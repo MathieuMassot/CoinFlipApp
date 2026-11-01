@@ -133,6 +133,8 @@ export const useGame = ({ onEvents }: Options = {}) => {
     startNewGame();
   }, [startNewGame]);
 
+  const resetRecords = useCallback(() => setRecords([]), []);
+
   return {
     loaded,
     game: history.present,
@@ -148,5 +150,6 @@ export const useGame = ({ onEvents }: Options = {}) => {
     launchFreeUntilLose,
     startNewGame,
     finishGame,
+    resetRecords,
   };
 };

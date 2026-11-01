@@ -1,12 +1,13 @@
 import React, { ReactNode } from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Props = {
   title: string;
   active: boolean; // sur le board ?
   onPlace: () => void;
   onRemove: () => void;
-  onPress?: () => void; // appui sur une carte posée (utilisé en 7b)
+  onPress?: () => void; // appui court sur une carte posée
+  onLongPress?: () => void; // appui long sur une carte posée
   children?: ReactNode;
 };
 
@@ -16,49 +17,58 @@ const BoardCard = ({
   onPlace,
   onRemove,
   onPress,
+  onLongPress,
   children,
 }: Props) => (
   <TouchableOpacity
     style={[styles.card, active ? styles.cardActive : styles.cardInactive]}
     onPress={active ? onPress : onPlace}
+    onLongPress={active ? onLongPress : undefined}
     activeOpacity={0.8}
   >
     <Text style={styles.title}>{title}</Text>
     {active ? (
-      <>
-        {children}
-        <TouchableOpacity onPress={onRemove} hitSlop={10}>
-          <Text style={styles.remove}>Retirer</Text>
-        </TouchableOpacity>
-      </>
+      <View style={styles.body}>{children}</View>
     ) : (
-      <Text style={styles.hint}>Touche pour poser</Text>
+      <Text style={styles.hint}>Poser</Text>
+    )}
+    {active && (
+      <TouchableOpacity style={styles.cross} onPress={onRemove} hitSlop={8}>
+        <Text style={styles.crossText}>✕</Text>
+      </TouchableOpacity>
     )}
   </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
   card: {
-    width: 150,
-    minHeight: 130,
+    width: 118,
+    minHeight: 96,
     borderRadius: 14,
     borderWidth: 2,
-    padding: 10,
+    padding: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardActive: {
-    backgroundColor: '#2c3e50',
-    borderColor: '#f1c40f',
-  },
+  cardActive: { backgroundColor: '#2c3e50', borderColor: '#f1c40f' },
   cardInactive: {
     backgroundColor: '#1c1c2b',
     borderColor: '#3b3b50',
     opacity: 0.55,
   },
-  title: { color: '#ecf0f1', fontSize: 18, fontWeight: 'bold' },
-  hint: { color: '#95a5a6', fontSize: 12, marginTop: 8 },
-  remove: { color: '#e67e22', fontSize: 12, marginTop: 6 },
+  title: { color: '#ecf0f1', fontSize: 16, fontWeight: 'bold' },
+  body: { alignItems: 'center', marginTop: 4 },
+  hint: { color: '#95a5a6', fontSize: 12, marginTop: 4 },
+  cross: {
+    position: 'absolute',
+    top: 2,
+    right: 4,
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  crossText: { color: '#e67e22', fontSize: 14, fontWeight: 'bold' },
 });
 
 export default BoardCard;
