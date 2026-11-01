@@ -12,7 +12,8 @@ import {
   setOkaunBase,
   setOkaunNow,
   okaunProgression,
-  recordFlipsWithEvents
+  recordFlipsWithEvents,
+  adjustOkaun,
 } from '../game';
 
 const win: Flip = { result: 'Win', coins: ['Win'] };
@@ -235,5 +236,33 @@ describe('Dernière série', () => {
   it('est vidée par un nouveau tour', () => {
     const s = setMyTurn(play(newGame(), [win]), true);
     expect(s.lastSeries).toEqual([]);
+  });
+});
+
+describe('Réglage d’Okaun', () => {
+  const withOkaun = () => setBoard(newGame(), { okaun: true });
+
+  it('un bonus permanent monte la base et la valeur du moment', () => {
+    const s = adjustOkaun(withOkaun(), { power: 3, toughness: 0 }, true);
+    expect(s.okaunBase).toEqual({ power: 6, toughness: 3 });
+    expect(s.okaunNow).toEqual({ power: 6, toughness: 3 });
+  });
+
+  it('un bonus reçu après des doublements n’est pas doublé', () => {
+    let s = play(withOkaun(), [win, win], 'okaun'); // 12/12
+    s = adjustOkaun(s, { power: 3, toughness: 0 }, true);
+    expect(s.okaunNow).toEqual({ power: 15, toughness: 12 });
+    expect(s.okaunBase).toEqual({ power: 6, toughness: 3 });
+  });
+
+  it('un bonus « ce tour seulement » ne touche pas la base', () => {
+    const s = adjustOkaun(withOkaun(), { power: 2, toughness: 2 }, false);
+    expect(s.okaunBase).toEqual({ power: 3, toughness: 3 });
+    expect(s.okaunNow).toEqual({ power: 5, toughness: 5 });
+  });
+
+  it('ne descend pas sous zéro', () => {
+    const s = adjustOkaun(withOkaun(), { power: -10, toughness: 0 }, true);
+    expect(s.okaunNow.power).toBe(0);
   });
 });

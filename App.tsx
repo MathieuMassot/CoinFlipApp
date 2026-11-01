@@ -10,17 +10,26 @@ import {
 } from 'react-native';
 import { useKeepAwake } from '@sayem314/react-native-keep-awake';
 import BoardCard from './components/BoardCard';
+import CardOverlay from './components/CardOverlay';
 import LastFlips from './components/LastFlips';
+import OkaunPanel from './components/OkaunPanel';
 import SmallButton from './components/SmallButton';
 import StatsPage from './components/StatsPage';
+import { Flip } from './flip';
+import { okaunProgression } from './game';
 import { useGame } from './useGame';
+import { useReveal } from './useReveal';
+
+type Overlay = 'z' | 'okaun' | null;
 
 const CoinFlipApp = () => {
   useKeepAwake();
-  const g = useGame();
+  const { reveal, start, skip } = useReveal();
+  const g = useGame({ onBeforeChange: skip });
   const [countText, setCountText] = useState('1');
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [page, setPage] = useState(0);
+  const [overlay, setOverlay] = useState<Overlay>(null);
   const count = Math.max(0, parseInt(countText, 10) || 0);
 
   if (!g.loaded) {
@@ -34,6 +43,27 @@ const CoinFlipApp = () => {
   const { game } = g;
   const { board, turn } = game;
   const addToCount = (n: number) => setCountText(String(Math.max(0, count + n)));
+
+  // Pendant le dévoilement, on n'affiche que les lancers déjà « sortis »
+  const revealCount = reveal ? reveal.count : game.lastSeries.length;
+  const shownSeries = game.lastSeries.slice(0, revealCount);
+  const hidden = game.lastSeries.length - shownSeries.length;
+  const shownTurnFlips = turn.flips.slice(0, turn.flips.length - hidden);
+  const okaunShown =
+    reveal && reveal.steps
+      ? reveal.steps[Math.min(reveal.count, reveal.steps.length) - 1]
+      : game.okaunNow;
+
+  // Lance une série puis la dévoile lancer par lancer
+  const launch = (run: () => Flip[]) => {
+    const before = game.okaunNow;
+    const flips = run();
+    if (flips.length > 0) {
+      start(flips.length, board.okaun ? okaunProgression(before, flips) : null);
+    }
+  };
+
+  const dots = page === 0 ? '● ○' : '○ ●';
 
   const mainPage = (
     <View style={styles.page}>
@@ -59,8 +89,11 @@ const CoinFlipApp = () => {
             active={board.zndrsplt}
             onPlace={() => g.toggleBoard('zndrsplt')}
             onRemove={() => g.toggleBoard('zndrsplt')}
+            onPress={() => setOverlay('z')}
+            onLongPress={() => launch(g.launchZ)}
           >
             <Text style={styles.big}>À piocher : {game.pendingDraws}</Text>
+            <Text style={styles.hintSmall}>maintenir = lancer</Text>
           </BoardCard>
           <View style={styles.thumb}>
             <Text style={styles.thumbLabel}>Pouce</Text>
@@ -74,10 +107,13 @@ const CoinFlipApp = () => {
             active={board.okaun}
             onPlace={() => g.toggleBoard('okaun')}
             onRemove={() => g.toggleBoard('okaun')}
+            onPress={() => setOverlay('okaun')}
+            onLongPress={() => launch(g.launchOkaun)}
           >
             <Text style={styles.big}>
-              {game.okaunNow.power}/{game.okaunNow.toughness}
+              {okaunShown.power}/{okaunShown.toughness}
             </Text>
+            <Text style={styles.hintSmall}>maintenir = lancer</Text>
             {turn.doublings > 0 && (
               <SmallButton title="Fin de tour" onPress={g.endTurn} />
             )}
@@ -86,10 +122,11 @@ const CoinFlipApp = () => {
       </View>
 
       <LastFlips
-        series={game.lastSeries}
-        turnFlips={turn.flips}
+        series={shownSeries}
+        turnFlips={shownTurnFlips}
         turnNumber={turn.number}
         mine={turn.mine}
+        onPress={skip}
       />
 
       <View style={styles.freeBar}>
@@ -111,13 +148,16 @@ const CoinFlipApp = () => {
         />
         <SmallButton
           title="Lancer"
-          onPress={() => g.launchFree(count)}
+          onPress={() => launch(() => g.launchFree(count))}
           disabled={count === 0}
         />
-        <SmallButton title="∞ Lose" onPress={g.launchFreeUntilLose} />
+        <SmallButton
+          title="∞ Lose"
+          onPress={() => launch(g.launchFreeUntilLose)}
+        />
       </View>
 
-      <Text style={styles.dots}>{page === 0 ? '● ○' : '○ ●'}</Text>
+      <Text style={styles.dots}>{dots}</Text>
     </View>
   );
 
@@ -130,7 +170,7 @@ const CoinFlipApp = () => {
         onFinishGame={g.finishGame}
         onResetRecords={g.resetRecords}
       />
-      <Text style={styles.dots}>{page === 0 ? '● ○' : '○ ●'}</Text>
+      <Text style={styles.dots}>{dots}</Text>
     </View>
   );
 
@@ -156,6 +196,30 @@ const CoinFlipApp = () => {
           </>
         )}
       </ScrollView>
+
+      <CardOverlay visible={overlay === 'okaun'} onClose={() => setOverlay(null)}>
+        <OkaunPanel
+          now={game.okaunNow}
+          base={game.okaunBase}
+          onAdjust={g.adjustOkaun}
+          onSetValue={g.setOkaunValue}
+        />
+      </CardOverlay>
+
+      <CardOverlay visible={overlay === 'z'} onClose={() => setOverlay(null)}>
+        <View style={styles.zPanel}>
+          <Text style={styles.overlayTitle}>Z</Text>
+          <Text style={styles.zNumber}>{game.pendingDraws}</Text>
+          <Text style={styles.line}>cartes à piocher</Text>
+          <SmallButton
+            title="Pioché"
+            onPress={() => {
+              g.markCardsDrawn();
+              setOverlay(null);
+            }}
+          />
+        </View>
+      </CardOverlay>
     </View>
   );
 };
@@ -181,6 +245,7 @@ const styles = StyleSheet.create({
   thumb: { alignItems: 'center' },
   thumbLabel: { color: '#ecf0f1', fontSize: 12, fontWeight: 'bold' },
   big: { color: '#ecf0f1', fontSize: 17, fontWeight: 'bold', textAlign: 'center' },
+  hintSmall: { color: '#7f8c8d', fontSize: 10, marginTop: 2 },
   freeBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -197,6 +262,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   dots: { color: '#7f8c8d', textAlign: 'center', fontSize: 12 },
+  zPanel: { alignItems: 'center', gap: 10 },
+  overlayTitle: { color: '#ecf0f1', fontSize: 20, fontWeight: 'bold' },
+  zNumber: { color: '#ffffff', fontSize: 56, fontWeight: 'bold' },
+  line: { color: '#bdc3c7', fontSize: 15 },
 });
 
 export default CoinFlipApp;

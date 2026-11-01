@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { FlipSource, RecordedFlip } from '../game';
 
 const SOURCE_LABEL: Record<FlipSource, string> = {
@@ -14,9 +14,10 @@ type Props = {
   turnFlips: RecordedFlip[]; // tous les lancers du tour
   turnNumber: number;
   mine: boolean;
+  onPress?: () => void; // saute l'animation
 };
 
-const LastFlips = ({ series, turnFlips, turnNumber, mine }: Props) => {
+const LastFlips = ({ series, turnFlips, turnNumber, mine, onPress }: Props) => {
   const wins = series.filter(f => f.result === 'Win').length;
   const losses = series.length - wins;
   const first = series[0];
@@ -27,7 +28,7 @@ const LastFlips = ({ series, turnFlips, turnNumber, mine }: Props) => {
     : '';
 
   return (
-    <View style={styles.panel}>
+<TouchableOpacity style={styles.panel} activeOpacity={1} onPress={onPress}>
       <Text style={styles.title}>
         {series.length === 0
           ? 'Aucun lancer'
@@ -67,7 +68,7 @@ const LastFlips = ({ series, turnFlips, turnNumber, mine }: Props) => {
           </Text>
         ))}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

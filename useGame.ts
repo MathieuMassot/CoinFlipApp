@@ -6,6 +6,8 @@ import {
   GameEvent,
   GameState,
   Player,
+  Stats,
+  adjustOkaun as applyAdjustOkaun,
   endTurn as applyEndTurn,
   markCardsDrawn as applyMarkCardsDrawn,
   newGame,
@@ -18,11 +20,14 @@ import { GameRecord, endGame } from './records';
 import { SAVE_VERSION } from './saved';
 import { loadSaved, writeSaved } from './storage';
 
-type Options = { onEvents?: (events: GameEvent[]) => void };
+type Options = {
+  onEvents?: (events: GameEvent[]) => void;
+  onBeforeChange?: () => void; // appelé avant tout changement de la partie
+};
 
 const WIN: Flip = { result: 'Win', coins: ['Win'] };
 
-export const useGame = ({ onEvents }: Options = {}) => {
+export const useGame = ({ onEvents, onBeforeChange }: Options = {}) => {
   const [history, setHistory] = useState<History<GameState>>(() =>
     newHistory(newGame()),
   );
@@ -32,6 +37,9 @@ export const useGame = ({ onEvents }: Options = {}) => {
   // Dernier état connu : deux appuis rapprochés ne s'écrasent pas
   const stateRef = useRef(history.present);
   stateRef.current = history.present;
+
+  const beforeChange = useRef(onBeforeChange);
+  beforeChange.current = onBeforeChange;
 
   // Reprise de la partie au lancement
   useEffect(() => {
@@ -57,6 +65,7 @@ export const useGame = ({ onEvents }: Options = {}) => {
   }, [loaded, history.present, records]);
 
   const apply = useCallback((next: GameState) => {
+    beforeChange.current?.();
     stateRef.current = next;
     setHistory(h => commit(h, next));
   }, []);
@@ -74,6 +83,15 @@ export const useGame = ({ onEvents }: Options = {}) => {
       }
     },
     [apply, onEvents],
+  );
+
+  // Enregistre une série et la renvoie (pour l'afficher un par un)
+  const launch = useCallback(
+    (flips: Flip[], source: FlipSource) => {
+      play(flips, source);
+      return flips;
+    },
+    [play],
   );
 
   const toggleBoard = useCallback(
@@ -108,19 +126,59 @@ export const useGame = ({ onEvents }: Options = {}) => {
 
   const launchFree = useCallback(
     (count: number) =>
-      play(flipMany(count, stateRef.current.board.thumb), 'manual'),
-    [play],
+      launch(flipMany(count, stateRef.current.board.thumb), 'manual'),
+    [launch],
   );
 
   const launchFreeUntilLose = useCallback(
-    () => play(flipUntilLose(stateRef.current.board.thumb), 'manual'),
-    [play],
+    () => launch(flipUntilLose(stateRef.current.board.thumb), 'manual'),
+    [launch],
   );
 
-  const undoLast = useCallback(() => setHistory(h => undo(h)), []);
+  const launchOkaun = useCallback(
+    () => launch(flipUntilLose(stateRef.current.board.thumb), 'okaun'),
+    [launch],
+  );
+
+  const launchZ = useCallback(
+    () => launch(flipUntilLose(stateRef.current.board.thumb), 'zndrsplt'),
+    [launch],
+  );
+
+  // Bonus ou malus d'artefact sur Okaun
+  const adjustOkaun = useCallback(
+    (delta: Stats, permanent: boolean) =>
+      apply(applyAdjustOkaun(stateRef.current, delta, permanent)),
+    [apply],
+  );
+
+  // Saisie directe : on la traduit en écart par rapport à la valeur actuelle
+  const setOkaunValue = useCallback(
+    (value: Stats, permanent: boolean) => {
+      const s = stateRef.current;
+      const from = permanent ? s.okaunBase : s.okaunNow;
+      apply(
+        applyAdjustOkaun(
+          s,
+          {
+            power: value.power - from.power,
+            toughness: value.toughness - from.toughness,
+          },
+          permanent,
+        ),
+      );
+    },
+    [apply],
+  );
+
+  const undoLast = useCallback(() => {
+    beforeChange.current?.();
+    setHistory(h => undo(h));
+  }, []);
 
   // Nouvelle partie : stats à zéro, la base d'Okaun est conservée
   const startNewGame = useCallback(() => {
+    beforeChange.current?.();
     const fresh = newGame(stateRef.current.okaunBase);
     stateRef.current = fresh;
     setHistory(newHistory(fresh));
@@ -148,6 +206,10 @@ export const useGame = ({ onEvents }: Options = {}) => {
     opponentWin,
     launchFree,
     launchFreeUntilLose,
+    launchOkaun,
+    launchZ,
+    adjustOkaun,
+    setOkaunValue,
     startNewGame,
     finishGame,
     resetRecords,

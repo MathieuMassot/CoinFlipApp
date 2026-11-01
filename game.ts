@@ -114,6 +114,25 @@ export const setOkaunBase = (state: GameState, base: Stats): GameState => {
 export const setOkaunNow = (state: GameState, now: Stats): GameState =>
   withOkaunNow(state, now);
 
+const addStats = (a: Stats, d: Stats): Stats => ({
+  power: Math.max(0, a.power + d.power),
+  toughness: Math.max(0, a.toughness + d.toughness),
+});
+
+// Bonus ou malus d'artefact : permanent (la base bouge aussi)
+// ou pour ce tour seulement
+export const adjustOkaun = (
+  state: GameState,
+  delta: Stats,
+  permanent: boolean,
+): GameState =>
+  withOkaunNow(
+    permanent
+      ? { ...state, okaunBase: addStats(state.okaunBase, delta) }
+      : state,
+    addStats(state.okaunNow, delta),
+  );
+
 // Ouvre un nouveau tour : Okaun revient à sa base, l'affichage du dernier lancer repart de zéro
 const startTurn = (state: GameState, mine: boolean): GameState =>
   withOkaunNow(
