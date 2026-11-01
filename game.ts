@@ -41,6 +41,7 @@ export type GameState = {
   okaunBase: Stats; // la base, modifiée par les artefacts, qui persiste
   okaunNow: Stats; // la valeur du moment, qui revient à la base en fin de tour
   pendingDraws: number; // cartes à piocher, remis à zéro quand on a pioché
+  lastSeries: RecordedFlip[]; // les lancers du dernier enregistrement
   turn: Turn;
   stats: GameStats;
 };
@@ -70,7 +71,8 @@ export const newGame = (okaunBase: Stats = DEFAULT_OKAUN): GameState => ({
   okaunNow: okaunBase,
   pendingDraws: 0,
   turn: emptyTurn(1, false),
-    stats: emptyStats(),
+  stats: emptyStats(),
+  lastSeries: [],
 });
 
 const double = (s: Stats): Stats => ({
@@ -112,13 +114,16 @@ export const setOkaunBase = (state: GameState, base: Stats): GameState => {
 export const setOkaunNow = (state: GameState, now: Stats): GameState =>
   withOkaunNow(state, now);
 
-// Ouvre un nouveau tour : Okaun revient à sa base
+// Ouvre un nouveau tour : Okaun revient à sa base, l'affichage du dernier lancer repart de zéro
 const startTurn = (state: GameState, mine: boolean): GameState =>
   withOkaunNow(
-    { ...state, turn: emptyTurn(state.turn.number + 1, mine) },
+    {
+      ...state,
+      lastSeries: [],
+      turn: emptyTurn(state.turn.number + 1, mine),
+    },
     state.okaunBase,
   );
-
 // Début (true) ou fin (false) de mon tour
 export const setMyTurn = (state: GameState, mine: boolean): GameState =>
   startTurn(state, mine);
@@ -190,7 +195,13 @@ export const recordFlips = (
   state: GameState,
   flips: Flip[],
   context: Context,
-): GameState => flips.reduce((s, f) => recordFlip(s, f, context), state);
+): GameState => {
+  if (flips.length === 0) {
+    return state;
+  }
+  const next = flips.reduce((s, f) => recordFlip(s, f, context), state);
+  return { ...next, lastSeries: next.turn.flips.slice(-flips.length) };
+};
 
 // Ce qui vient de se passer, pour déclencher les sons (et plus tard les animations)
 export type GameEvent =

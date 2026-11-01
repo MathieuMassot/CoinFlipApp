@@ -19,6 +19,10 @@ jest.mock('react-native-sound', () => {
 jest.mock('@sayem314/react-native-keep-awake', () => ({
   useKeepAwake: jest.fn(),
 }));
+jest.mock('../storage', () => ({
+  loadSaved: jest.fn(() => new Promise(() => {})),
+  writeSaved: jest.fn(() => Promise.resolve()),
+}));
 
 test('renders correctly', async () => {
   await ReactTestRenderer.act(() => {

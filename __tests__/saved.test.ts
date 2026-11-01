@@ -31,4 +31,10 @@ describe('saved', () => {
     const saved = { ...defaultSaved(), game, records: [endGame(game, 1000)] };
     expect(parseSaved(serializeSaved(saved))).toEqual(saved);
   });
+
+    it('accepte une ancienne sauvegarde sans lastSeries', () => {
+    const raw = JSON.parse(serializeSaved(defaultSaved()));
+    delete raw.game.lastSeries;
+    expect(parseSaved(JSON.stringify(raw)).game.lastSeries).toEqual([]);
+  });
 });

@@ -1,226 +1,261 @@
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import LastFlips from './components/LastFlips';
 import { useKeepAwake } from '@sayem314/react-native-keep-awake';
+import BoardCard from './components/BoardCard';
 import StyledButton from './components/StyledButton';
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, FlatList, Switch, StyleSheet, ImageBackground } from 'react-native';
-import Sound from 'react-native-sound'; // Importer react-native-sound
-import { Flip, flipMany, flipUntilLose } from './flip';
-
-const formatFlip = (item: Flip, index: number) =>
-  item.coins.length > 1
-    ? `Lancer ${index + 1}: ${item.result} (${item.coins.join(' & ')})`
-    : `Lancer ${index + 1}: ${item.result}`;
+import { useGame } from './useGame';
 
 const CoinFlipApp = () => {
   useKeepAwake();
-  const [numLancers, setNumLancers] = useState(0); // Nombre de lancers choisis
-  const [results, setResults] = useState<Flip[]>([]);
-  const [doubleCoin, setDoubleCoin] = useState(false); // Activer/Désactiver le double lancer
+  const g = useGame();
+  const [countText, setCountText] = useState('1');
+  const count = Math.max(0, parseInt(countText, 10) || 0);
 
-const laughSound = useRef<Sound | null>(null);
-
-  useEffect(() => {
-    // Charger le son du rire
-    laughSound.current = new Sound('laugh.mp3', Sound.MAIN_BUNDLE, (error) => {
-      if (error) {
-        console.log('Erreur lors du chargement du son', error);
-      }
-    });
-
-    // Nettoyage du son à la fin
-    return () => {
-      if (laughSound.current) {
-        laughSound.current.release();
-      }
-    };
-  }, []);
-
-
-    // Fonction pour vérifier si tous les résultats sont "Win"
-const checkForSecret = (newResults: Flip[]) => {
-  if (numLancers === 5 && newResults.every(r => r.result === 'Win')) {
-    triggerSecretFeature();
+  if (!g.loaded) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#ecf0f1" />
+      </View>
+    );
   }
-};
 
-    // Fonction pour gérer la secret feature
-    const triggerSecretFeature = () => {
-      // Jouer le son du rire à partir de laughSound.current
-      if (laughSound.current) {
-        laughSound.current.play((success) => {
-          if (!success) {
-            console.log('Erreur lors de la lecture du son');
-          }
-        });
-      }
-    };
+  const { game } = g;
+  const { board, stats, turn } = game;
+  const addToCount = (n: number) => setCountText(String(Math.max(0, count + n)));
 
-const handleLancers = () => {
-  const newResults = flipMany(numLancers, doubleCoin);
-  setResults(newResults);
-  checkForSecret(newResults);
-};
+  const totalWins = stats.wins.withThumb + stats.wins.withoutThumb;
+  const totalLosses = stats.losses.withThumb + stats.losses.withoutThumb;
 
-const handleLancersUntilLose = () => {
-  setResults(flipUntilLose(doubleCoin));
-};
+  const confirm = (title: string, message: string, onOk: () => void) =>
+    Alert.alert(title, message, [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Valider', onPress: onOk },
+    ]);
 
   return (
     <View style={styles.container}>
-      {/* Image de fond */}
-      <ImageBackground
-        source={{ uri: 'https://i.pinimg.com/originals/7a/91/ae/7a91ae203093e855a79cee9d8e45e41c.png' }}  // Remplacer par l'image de fond
-        style={styles.background}
-      >
-        {/* Overlay pour améliorer la lisibilité */}
-        <View style={styles.overlay} />
-
-        {/* Contenu principal */}
-        <View style={styles.content}>
-          <Text style={styles.title}>Coin Flip Simulator</Text>
-          <Text style={styles.subtitle}>©Rye_Smut</Text>
-          <Text style={styles.counterText}>Nombre de lancers : {numLancers}</Text>
-
-          {/* Ligne des boutons pour ajouter/retirer des lancers */}
-          <View style={styles.buttonRow}>
-            <StyledButton
-              title="-"
-              onPress={() => setNumLancers(numLancers > 0 ? numLancers - 1 : 0)}
-          
-            />
-            <StyledButton
-              title="+"
-              onPress={() => setNumLancers(numLancers + 1)} 
-          
-              />
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.topBar}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Mon tour</Text>
+            <Switch value={turn.mine} onValueChange={g.setMyTurn} />
           </View>
-
-          {/* Bouton pour réinitialiser les résultats */}
           <StyledButton
-            title="Réinitialiser"
-            onPress={() => setResults([])}
-        
-          />
-
-          {/* Interrupteur pour activer/désactiver le Pouce de Krark */}
-          <View style={styles.switchContainer}>
-            <Text style={styles.switchLabel}>Pouce de Krark</Text>
-            <Switch
-              value={doubleCoin}
-              onValueChange={() => setDoubleCoin(!doubleCoin)}
-              thumbColor={doubleCoin ? '#1abc9c' : '#f39c12'}
-              trackColor={{ false: '#ecf0f1', true: '#2ecc71' }}
-            />
-          </View>
-
-          {/* Boutons pour lancer les pièces et lancer jusqu'à un "Lose" */}
-          <StyledButton
-            title="Lancer les pièces"
-            onPress={handleLancers}
-            disabled={numLancers === 0}  // Désactiver si numLancers est à 0
-          />
-          <StyledButton
-            title="Lancer jusqu'à un Lose"
-            onPress={handleLancersUntilLose}
-        
-          />
-
-          {/* Liste des résultats des lancers */}
-          <FlatList
-            data={results}
-renderItem={({ item, index }) => (
-  <Text
-    style={[
-      styles.resultText,
-      item.result === 'Win' ? styles.winText : styles.loseText,
-    ]}
-  >
-    {formatFlip(item, index)}
-  </Text>
-)}
-            keyExtractor={(item, index) => index.toString()}
+            title="Annuler"
+            onPress={g.undo}
+            disabled={!g.canUndo}
           />
         </View>
-      </ImageBackground>
+
+        <View style={styles.triangle}>
+          <BoardCard
+            title="Yusri"
+            active={board.yusri}
+            onPlace={() => g.toggleBoard('yusri')}
+            onRemove={() => g.toggleBoard('yusri')}
+          />
+          <View style={styles.triangleRow}>
+            <BoardCard
+              title="Zndrsplt"
+              active={board.zndrsplt}
+              onPlace={() => g.toggleBoard('zndrsplt')}
+              onRemove={() => g.toggleBoard('zndrsplt')}
+            >
+              <Text style={styles.big}>À piocher : {game.pendingDraws}</Text>
+            </BoardCard>
+            <BoardCard
+              title="Okaun"
+              active={board.okaun}
+              onPlace={() => g.toggleBoard('okaun')}
+              onRemove={() => g.toggleBoard('okaun')}
+            >
+              <Text style={styles.big}>
+                {game.okaunNow.power}/{game.okaunNow.toughness}
+              </Text>
+              {turn.doublings > 0 && (
+                <StyledButton title="Fin de tour" onPress={g.endTurn} />
+              )}
+            </BoardCard>
+          </View>
+          <View style={styles.thumb}>
+            <Text style={styles.label}>Pouce de Krark</Text>
+            <Switch
+              value={board.thumb}
+              onValueChange={() => g.toggleBoard('thumb')}
+            />
+          </View>
+        </View>
+
+        <LastFlips
+          series={game.lastSeries}
+          turnFlips={turn.flips}
+          turnNumber={turn.number}
+          mine={turn.mine}
+        />
+
+        <StyledButton title="+1 réussite adverse" onPress={g.opponentWin} />
+
+        <View style={styles.panel}>
+          <Text style={styles.label}>Lancers libres</Text>
+          <View style={styles.row}>
+            <StyledButton title="-" onPress={() => addToCount(-1)} />
+            <TextInput
+              style={styles.input}
+              value={countText}
+              onChangeText={setCountText}
+              keyboardType="number-pad"
+            />
+            <StyledButton title="+" onPress={() => addToCount(1)} />
+          </View>
+          <View style={styles.row}>
+            <StyledButton title="+10" onPress={() => addToCount(10)} />
+            <StyledButton title="+50" onPress={() => addToCount(50)} />
+          </View>
+          <StyledButton
+            title="Lancer"
+            onPress={() => g.launchFree(count)}
+            disabled={count === 0}
+          />
+          <StyledButton
+            title="Jusqu'à un Lose"
+            onPress={g.launchFreeUntilLose}
+          />
+        </View>
+
+        <View style={styles.panel}>
+        <View style={styles.panel}>
+          <Text style={styles.label}>Statistiques de la partie</Text>
+          <Text style={styles.line}>
+            {totalWins} réussis · {totalLosses} ratés
+          </Text>
+          <Text style={styles.line}>
+            Avec Pouce : {stats.wins.withThumb} réussis ·{' '}
+            {stats.losses.withThumb} ratés
+          </Text>
+          <Text style={styles.line}>
+            Sans Pouce : {stats.wins.withoutThumb} réussis ·{' '}
+            {stats.losses.withoutThumb} ratés
+          </Text>
+          <Text style={styles.line}>
+            PV perdus (Yusri) : {stats.lifeLost} · Cartes : Yusri{' '}
+            {stats.cardsYusri} + Zndrsplt {stats.cardsZndrsplt}
+          </Text>
+          <Text style={styles.line}>
+            Okaun max : {stats.okaunMax.power}/{stats.okaunMax.toughness}
+          </Text>
+        </View>
+          <View style={styles.chips}>
+            {turn.flips.slice(-40).map((f, i) => (
+              <Text
+                key={`${turn.number}-${i}`}
+                style={f.result === 'Win' ? styles.win : styles.lose}
+              >
+                ●
+              </Text>
+            ))}
+          </View>
+          <Text style={styles.line}>
+            Partie : {totalWins} réussis · {totalLosses} ratés
+          </Text>
+          <Text style={styles.line}>
+            Avec Pouce : {stats.wins.withThumb} réussis ·{' '}
+            {stats.losses.withThumb} ratés
+          </Text>
+          <Text style={styles.line}>
+            Sans Pouce : {stats.wins.withoutThumb} réussis ·{' '}
+            {stats.losses.withoutThumb} ratés
+          </Text>
+          <Text style={styles.line}>
+            PV perdus (Yusri) : {stats.lifeLost} · Cartes : Yusri{' '}
+            {stats.cardsYusri} + Zndrsplt {stats.cardsZndrsplt}
+          </Text>
+          <Text style={styles.line}>
+            Okaun max : {stats.okaunMax.power}/{stats.okaunMax.toughness}
+          </Text>
+        </View>
+
+        <View style={styles.row}>
+          <StyledButton
+            title="Nouvelle partie"
+            onPress={() =>
+              confirm(
+                'Nouvelle partie ?',
+                'Les stats de cette partie seront perdues.',
+                g.startNewGame,
+              )
+            }
+          />
+          <StyledButton
+            title="Fin de partie"
+            onPress={() =>
+              confirm(
+                'Terminer la partie ?',
+                'Les stats seront archivées dans le total.',
+                g.finishGame,
+              )
+            }
+          />
+        </View>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: '#f5f5f5', // Fond par défaut si l'image ne se charge pas
-  },
-  background: {
-    flex: 1,
-    resizeMode: 'cover', // Assure que l'image couvre tout l'écran
-    justifyContent: 'center',
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Couche semi-transparente (noir à 50%)
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 2,
-    color: '#ecf0f1', // Texte blanc pour contraster avec le fond coloré
-  },
-  subtitle: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-    color: '#ecf0f1', // Texte blanc pour contraster avec le fond coloré
-  },
-  counterText: {
-    fontSize: 20,
-    textAlign: 'center',
-    marginBottom: 15,
-    color: '#ecf0f1',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 10,
-  },
-
-  switchContainer: {
+  container: { flex: 1, backgroundColor: '#14141f' },
+  center: { flex: 1, backgroundColor: '#14141f', justifyContent: 'center' },
+  content: { padding: 16, paddingBottom: 40 },
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center', // Centrer l'interrupteur
-    marginVertical: 15,
+    justifyContent: 'space-between',
   },
-  switchLabel: {
-    fontSize: 18,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  label: { color: '#ecf0f1', fontSize: 16, fontWeight: 'bold' },
+  triangle: { alignItems: 'center', marginVertical: 12 },
+  triangleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 12,
+  },
+  thumb: { alignItems: 'center', marginTop: 12 },
+  panel: {
+    backgroundColor: '#1f1f30',
+    borderRadius: 12,
+    padding: 12,
+    marginVertical: 10,
+    gap: 6,
+  },
+  input: {
+    width: 90,
+    borderWidth: 1,
+    borderColor: '#7f8c8d',
+    borderRadius: 10,
     color: '#ecf0f1',
-    marginRight: 10, // Un petit espace entre le texte et l'interrupteur
-  },
-  resultText: {
-    fontSize: 18,
+    fontSize: 20,
     textAlign: 'center',
-    marginVertical: 3,
-    color: '#ecf0f1',  // Texte en blanc pour plus de lisibilité
   },
-  winText: {
-    color: '#2ecc71', // Vert pour les victoires
-    fontWeight: 'bold',
-  },
-  loseText: {
-    color: '#e74c3c', // Rouge pour les défaites
-    fontWeight: 'bold',
-  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap' },
+  win: { color: '#2ecc71', fontSize: 18 },
+  lose: { color: '#e74c3c', fontSize: 18 },
+  line: { color: '#bdc3c7', fontSize: 14 },
+  big: { color: '#ecf0f1', fontSize: 22, fontWeight: 'bold', marginVertical: 6 },
 });
-
 
 export default CoinFlipApp;

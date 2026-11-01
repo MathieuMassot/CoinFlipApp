@@ -33,7 +33,10 @@ export const parseSaved = (raw: string | null): Saved => {
       data.game.stats &&
       Array.isArray(data.records)
     ) {
-      return data as Saved;
+      return {
+        ...data,
+        game: { ...data.game, lastSeries: data.game.lastSeries ?? [] },
+      } as Saved;
     }
   } catch {
     // donnée illisible : on repart de zéro

@@ -218,3 +218,22 @@ describe('okaunProgression', () => {
     ]);
   });
 });
+
+describe('Dernière série', () => {
+  it('contient les lancers du dernier enregistrement', () => {
+    let s = play(newGame(), [win, lose]);
+    s = play(s, [win, win, win]);
+    expect(s.lastSeries).toHaveLength(3);
+    expect(s.turn.flips).toHaveLength(5);
+  });
+
+  it('ne change pas quand aucun lancer n’est fait', () => {
+    const s = play(newGame(), [win]);
+    expect(play(s, [])).toBe(s);
+  });
+
+  it('est vidée par un nouveau tour', () => {
+    const s = setMyTurn(play(newGame(), [win]), true);
+    expect(s.lastSeries).toEqual([]);
+  });
+});
