@@ -16,6 +16,9 @@ jest.mock('react-native-sound', () => {
   );
   return { __esModule: true, default: Sound };
 });
+jest.mock('@sayem314/react-native-keep-awake', () => ({
+  useKeepAwake: jest.fn(),
+}));
 
 test('renders correctly', async () => {
   await ReactTestRenderer.act(() => {
