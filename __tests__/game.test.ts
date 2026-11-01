@@ -11,6 +11,8 @@ import {
   setMyTurn,
   setOkaunBase,
   setOkaunNow,
+  okaunProgression,
+  recordFlipsWithEvents
 } from '../game';
 
 const win: Flip = { result: 'Win', coins: ['Win'] };
@@ -125,5 +127,94 @@ describe('Tours', () => {
     let s = play(newGame(), [win, lose]);
     s = setMyTurn(s, true);
     expect(s.turn).toMatchObject({ number: 2, mine: true, flips: [] });
+  });
+});
+
+describe('Événements', () => {
+  const ctx = (source: FlipSource, player: Player = 'me') => ({
+    player,
+    source,
+  });
+  const withOkaun = () => setBoard(newGame(), { okaun: true });
+
+  it('jackpot Yusri : 5 réussites sur 5', () => {
+    const { events } = recordFlipsWithEvents(
+      newGame(),
+      [win, win, win, win, win],
+      ctx('yusri'),
+    );
+    expect(events).toContainEqual({ type: 'yusriJackpot' });
+  });
+
+  it('pas de jackpot avec seulement 4 lancers', () => {
+    const { events } = recordFlipsWithEvents(
+      newGame(),
+      [win, win, win, win],
+      ctx('yusri'),
+    );
+    expect(events).toEqual([]);
+  });
+
+  it('catastrophe Yusri : 5 échecs sur 5', () => {
+    const { events } = recordFlipsWithEvents(
+      newGame(),
+      [lose, lose, lose, lose, lose],
+      ctx('yusri'),
+    );
+    expect(events).toContainEqual({ type: 'yusriDisaster' });
+  });
+
+  it('le Pouce qui sauve et le Pouce qui échoue', () => {
+    const { events } = recordFlipsWithEvents(
+      newGame(),
+      [thumbWin, thumbLose, thumbLose],
+      ctx('manual'),
+    );
+    expect(events).toContainEqual({ type: 'thumbSave', count: 1 });
+    expect(events).toContainEqual({ type: 'thumbDoubleFail', count: 2 });
+  });
+
+  it('Okaun dépasse 50', () => {
+    const { events } = recordFlipsWithEvents(
+      withOkaun(),
+      [win, win, win, win, win],
+      ctx('okaun'),
+    );
+    expect(events).toContainEqual({ type: 'okaunMilestone', threshold: 50 });
+  });
+
+  it('seul le palier le plus haut franchi est signalé', () => {
+    const { events } = recordFlipsWithEvents(
+      withOkaun(),
+      [win, win, win, win, win, win],
+      ctx('okaun'),
+    );
+    expect(events).toContainEqual({ type: 'okaunMilestone', threshold: 100 });
+    expect(events).not.toContainEqual({
+      type: 'okaunMilestone',
+      threshold: 50,
+    });
+  });
+
+  it('longue série d’Okaun', () => {
+    const flips = [win, win, win, win, win, win, win, win, lose];
+    const { events } = recordFlipsWithEvents(withOkaun(), flips, ctx('okaun'));
+    expect(events).toContainEqual({
+      type: 'longStreak',
+      source: 'okaun',
+      wins: 8,
+    });
+  });
+});
+
+describe('okaunProgression', () => {
+  it('donne la valeur d’Okaun après chaque lancer', () => {
+    expect(
+      okaunProgression({ power: 3, toughness: 3 }, [win, win, lose]),
+    ).toEqual([
+      { power: 6, toughness: 6 },
+      { power: 12, toughness: 12 },
+      { power: 12, toughness: 12 },
+    ]);
   });
 });

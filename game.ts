@@ -54,20 +54,23 @@ const emptyTurn = (number: number, mine: boolean): Turn => ({
   flips: [],
 });
 
+
+export const emptyStats = (): GameStats => ({
+  wins: { withThumb: 0, withoutThumb: 0 },
+  losses: { withThumb: 0, withoutThumb: 0 },
+  lifeLost: 0,
+  cardsYusri: 0,
+  cardsZndrsplt: 0,
+  okaunMax: { power: 0, toughness: 0 },
+});
+
 export const newGame = (okaunBase: Stats = DEFAULT_OKAUN): GameState => ({
   board: { thumb: false, yusri: false, zndrsplt: false, okaun: false },
   okaunBase,
   okaunNow: okaunBase,
   pendingDraws: 0,
   turn: emptyTurn(1, false),
-  stats: {
-    wins: { withThumb: 0, withoutThumb: 0 },
-    losses: { withThumb: 0, withoutThumb: 0 },
-    lifeLost: 0,
-    cardsYusri: 0,
-    cardsZndrsplt: 0,
-    okaunMax: { power: 0, toughness: 0 },
-  },
+    stats: emptyStats(),
 });
 
 const double = (s: Stats): Stats => ({
@@ -188,3 +191,88 @@ export const recordFlips = (
   flips: Flip[],
   context: Context,
 ): GameState => flips.reduce((s, f) => recordFlip(s, f, context), state);
+
+// Ce qui vient de se passer, pour déclencher les sons (et plus tard les animations)
+export type GameEvent =
+  | { type: 'yusriJackpot' } // 5 réussites sur 5
+  | { type: 'yusriDisaster' } // 5 échecs sur 5
+  | { type: 'thumbSave'; count: number } // le Pouce transforme un échec en réussite
+  | { type: 'thumbDoubleFail'; count: number } // deux échecs malgré le Pouce
+  | { type: 'okaunMilestone'; threshold: number } // la force d'Okaun dépasse un palier
+  | { type: 'longStreak'; source: 'okaun' | 'zndrsplt'; wins: number };
+
+export const OKAUN_MILESTONES = [50, 100, 500, 1000];
+export const LONG_STREAK = 8;
+
+const detectEvents = (
+  before: GameState,
+  after: GameState,
+  flips: Flip[],
+  { player, source }: Context,
+): GameEvent[] => {
+  const events: GameEvent[] = [];
+
+  if (player === 'me') {
+    if (source === 'yusri' && flips.length === 5) {
+      if (flips.every(f => f.result === 'Win')) {
+        events.push({ type: 'yusriJackpot' });
+      }
+      if (flips.every(f => f.result === 'Lose')) {
+        events.push({ type: 'yusriDisaster' });
+      }
+    }
+
+    const saves = flips.filter(
+      f => f.coins.length > 1 && f.result === 'Win' && f.coins.includes('Lose'),
+    ).length;
+    const doubleFails = flips.filter(
+      f => f.coins.length > 1 && f.result === 'Lose',
+    ).length;
+    if (saves > 0) {
+      events.push({ type: 'thumbSave', count: saves });
+    }
+    if (doubleFails > 0) {
+      events.push({ type: 'thumbDoubleFail', count: doubleFails });
+    }
+
+    if (source === 'okaun' || source === 'zndrsplt') {
+      const wins = flips.filter(f => f.result === 'Win').length;
+      if (wins >= LONG_STREAK) {
+        events.push({ type: 'longStreak', source, wins });
+      }
+    }
+  }
+
+  // Seul le palier le plus haut franchi est signalé
+  const crossed = OKAUN_MILESTONES.filter(
+    t => before.okaunNow.power <= t && after.okaunNow.power > t,
+  );
+  if (crossed.length > 0) {
+    events.push({ type: 'okaunMilestone', threshold: Math.max(...crossed) });
+  }
+
+  return events;
+};
+
+// Comme recordFlips, mais renvoie aussi les événements à signaler
+export const recordFlipsWithEvents = (
+  state: GameState,
+  flips: Flip[],
+  context: Context,
+): { state: GameState; events: GameEvent[] } => {
+  const next = recordFlips(state, flips, context);
+  return { state: next, events: detectEvents(state, next, flips, context) };
+};
+
+// Valeur d'Okaun après chaque lancer, pour rejouer une série en temps réel
+export const okaunProgression = (start: Stats, flips: Flip[]): Stats[] => {
+  const steps: Stats[] = [];
+  let current = start;
+  for (const f of flips) {
+    if (f.result === 'Win') {
+      current = double(current);
+    }
+    steps.push(current);
+  }
+  return steps;
+};
