@@ -1,6 +1,6 @@
-/* eslint-disable react/no-unstable-nested-components */
+import StyledButton from './components/StyledButton';
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, FlatList, Switch, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, FlatList, Switch, StyleSheet, ImageBackground } from 'react-native';
 import Sound from 'react-native-sound'; // Importer react-native-sound
 import { Flip, flipMany, flipUntilLose } from './flip';
 
@@ -14,7 +14,7 @@ const CoinFlipApp = () => {
   const [results, setResults] = useState<Flip[]>([]);
   const [doubleCoin, setDoubleCoin] = useState(false); // Activer/Désactiver le double lancer
 
-  const laughSound = useRef(null);
+const laughSound = useRef<Sound | null>(null);
 
   useEffect(() => {
     // Charger le son du rire
@@ -62,17 +62,6 @@ const handleLancersUntilLose = () => {
   setResults(flipUntilLose(doubleCoin));
 };
 
-  // Bouton stylisé
-  const StyledButton = ({ title, onPress, disabled }) => (
-    <TouchableOpacity
-      style={[styles.button, disabled && styles.buttonDisabled]}
-      onPress={!disabled ? onPress : null}
-      disabled={disabled}
-    >
-      <Text style={styles.buttonText}>{title}</Text>
-    </TouchableOpacity>
-  );
-
   return (
     <View style={styles.container}>
       {/* Image de fond */}
@@ -94,12 +83,12 @@ const handleLancersUntilLose = () => {
             <StyledButton
               title="-"
               onPress={() => setNumLancers(numLancers > 0 ? numLancers - 1 : 0)}
-              disabled={undefined}
+          
             />
             <StyledButton
               title="+"
               onPress={() => setNumLancers(numLancers + 1)} 
-              disabled={undefined}
+          
               />
           </View>
 
@@ -107,7 +96,7 @@ const handleLancersUntilLose = () => {
           <StyledButton
             title="Réinitialiser"
             onPress={() => setResults([])}
-            disabled={undefined}
+        
           />
 
           {/* Interrupteur pour activer/désactiver le Pouce de Krark */}
@@ -130,7 +119,7 @@ const handleLancersUntilLose = () => {
           <StyledButton
             title="Lancer jusqu'à un Lose"
             onPress={handleLancersUntilLose}
-            disabled={undefined}
+        
           />
 
           {/* Liste des résultats des lancers */}
@@ -198,31 +187,12 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     color: '#ecf0f1',
   },
-  button: {
-    backgroundColor: '#2980b9',
-    paddingVertical: 15,
-    paddingHorizontal: 30,  // Rendre les boutons plus larges
-    marginVertical: 5,
-    borderRadius: 30,
-    alignItems: 'center',
-    shadowColor: '#2c3e50',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
-  },
-  buttonDisabled: {
-    backgroundColor: '#95a5a6',  // Couleur grise pour les boutons désactivés
-  },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginVertical: 10,
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+
   switchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
