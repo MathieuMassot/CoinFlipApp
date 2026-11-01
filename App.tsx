@@ -2,10 +2,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, FlatList, Switch, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
 import Sound from 'react-native-sound'; // Importer react-native-sound
+import { Flip, flipMany, flipUntilLose } from './flip';
+
+const formatFlip = (item: Flip, index: number) =>
+  item.coins.length > 1
+    ? `Lancer ${index + 1}: ${item.result} (${item.coins.join(' & ')})`
+    : `Lancer ${index + 1}: ${item.result}`;
 
 const CoinFlipApp = () => {
   const [numLancers, setNumLancers] = useState(0); // Nombre de lancers choisis
-  const [results, setResults] = useState([]); // Résultats des lancers
+  const [results, setResults] = useState<Flip[]>([]);
   const [doubleCoin, setDoubleCoin] = useState(false); // Activer/Désactiver le double lancer
 
   const laughSound = useRef(null);
@@ -26,15 +32,13 @@ const CoinFlipApp = () => {
     };
   }, []);
 
-  // Fonction pour simuler un lancer de pièce
-  const flipCoin = () => (Math.random() < 0.5 ? 'Win' : 'Lose');
 
     // Fonction pour vérifier si tous les résultats sont "Win"
-    const checkForSecret = (newResults) => {
-      if (numLancers === 5 && newResults.every(result => result.result === 'Win')) {
-        triggerSecretFeature();
-      }
-    };
+const checkForSecret = (newResults: Flip[]) => {
+  if (numLancers === 5 && newResults.every(r => r.result === 'Win')) {
+    triggerSecretFeature();
+  }
+};
 
     // Fonction pour gérer la secret feature
     const triggerSecretFeature = () => {
@@ -48,57 +52,15 @@ const CoinFlipApp = () => {
       }
     };
 
-  // Fonction pour lancer les pièces
-  const handleLancers = () => {
-    const newResults = [];
+const handleLancers = () => {
+  const newResults = flipMany(numLancers, doubleCoin);
+  setResults(newResults);
+  checkForSecret(newResults);
+};
 
-    for (let i = 0; i < numLancers; i++) {
-      // Simule un lancer de pièce (ou deux si "doubleCoin" est activé)
-      if (doubleCoin) {
-        const result1 = flipCoin();
-        const result2 = flipCoin();
-        const finalResult = (result1 === 'Win' || result2 === 'Win') ? 'Win' : 'Lose';
-        newResults.push({ text: `Lancer ${i + 1}: ${finalResult} (${result1} & ${result2})`, result: finalResult });
-      } else {
-        const result = flipCoin();
-        newResults.push({ text: `Lancer ${i + 1}: ${result}`, result });
-      }
-    }
-
-    setResults(newResults); // Mise à jour des résultats
-    checkForSecret(newResults); // Vérifie la condition secrète
-  };
-
-  // Fonction pour lancer jusqu'à obtenir un "Lose"
-  const handleLancersUntilLose = () => {
-    const newResults = [];
-    let i = 0;
-    let lost = false;
-
-    while (!lost) {
-      i++;
-      let finalResult;
-
-      if (doubleCoin) {
-        const result1 = flipCoin();
-        const result2 = flipCoin();
-        finalResult = (result1 === 'Win' || result2 === 'Win') ? 'Win' : 'Lose';
-        newResults.push({ text: `Lancer ${i}: ${finalResult} (${result1} & ${result2})`, result: finalResult });
-      } else {
-        const result = flipCoin();
-        finalResult = result;
-        newResults.push({ text: `Lancer ${i}: ${result}`, result });
-      }
-
-      // Arrêter une fois qu'un "Lose" est obtenu
-      if (finalResult === 'Lose') {
-        lost = true;
-      }
-    }
-
-    // Mise à jour des résultats
-    setResults(newResults);
-  };
+const handleLancersUntilLose = () => {
+  setResults(flipUntilLose(doubleCoin));
+};
 
   // Bouton stylisé
   const StyledButton = ({ title, onPress, disabled }) => (
@@ -174,16 +136,16 @@ const CoinFlipApp = () => {
           {/* Liste des résultats des lancers */}
           <FlatList
             data={results}
-            renderItem={({ item }) => (
-              <Text
-                style={[
-                  styles.resultText,
-                  item.result === 'Win' ? styles.winText : styles.loseText,
-                ]}
-              >
-                {item.text}
-              </Text>
-            )}
+renderItem={({ item, index }) => (
+  <Text
+    style={[
+      styles.resultText,
+      item.result === 'Win' ? styles.winText : styles.loseText,
+    ]}
+  >
+    {formatFlip(item, index)}
+  </Text>
+)}
             keyExtractor={(item, index) => index.toString()}
           />
         </View>
