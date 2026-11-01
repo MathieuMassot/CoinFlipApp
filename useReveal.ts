@@ -26,10 +26,16 @@ export const useReveal = () => {
     setReveal(null);
   }, [stop]);
 
+  // onStep(i) est appelé quand le lancer numéro i (à partir de 0) apparaît
   const start = useCallback(
-    (total: number, steps: Stats[] | null) => {
+    (
+      total: number,
+      steps: Stats[] | null,
+      onStep?: (index: number) => void,
+    ) => {
       stop();
       setReveal({ count: 1, total, steps });
+      onStep?.(0);
       const tick = (count: number) => {
         timer.current = setTimeout(() => {
           if (count >= total) {
@@ -37,6 +43,7 @@ export const useReveal = () => {
             setReveal(null);
             return;
           }
+          onStep?.(count);
           setReveal(r => (r ? { ...r, count: count + 1 } : r));
           tick(count + 1);
         }, STEP_MS);

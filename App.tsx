@@ -17,6 +17,7 @@ import SmallButton from './components/SmallButton';
 import StatsPage from './components/StatsPage';
 import { Flip } from './flip';
 import SlotReel from './components/SlotReel';
+import { eventHaptic, tickHaptic } from './haptics';
 import { GameEvent, okaunProgression } from './game';
 import { useSounds } from './useSounds';
 import { useGame } from './useGame';
@@ -48,6 +49,7 @@ const CoinFlipApp = () => {
       if (events.some(e => e.type === 'yusriJackpot')) {
         sounds.play('laugh');
       }
+      eventHaptic(events);
     }
   });
 
@@ -78,7 +80,11 @@ const CoinFlipApp = () => {
     const before = game.okaunNow;
     const flips = run();
     if (flips.length > 0) {
-      start(flips.length, board.okaun ? okaunProgression(before, flips) : null);
+      start(
+        flips.length,
+        board.okaun ? okaunProgression(before, flips) : null,
+        i => tickHaptic(flips[i].result),
+      );
     }
   };
 
