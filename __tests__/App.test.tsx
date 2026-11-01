@@ -11,6 +11,7 @@ jest.mock('react-native-sound', () => {
     jest.fn().mockImplementation(() => ({
       play: jest.fn(),
       release: jest.fn(),
+      stop: jest.fn(),
     })),
     { MAIN_BUNDLE: '' },
   );

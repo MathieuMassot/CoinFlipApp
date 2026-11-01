@@ -145,6 +145,12 @@ export const useGame = ({ onEvents, onBeforeChange }: Options = {}) => {
     [launch],
   );
 
+    const launchYusri = useCallback(
+    (count: number) =>
+      launch(flipMany(count, stateRef.current.board.thumb), 'yusri'),
+    [launch],
+  );
+
   // Bonus ou malus d'artefact sur Okaun
   const adjustOkaun = useCallback(
     (delta: Stats, permanent: boolean) =>
@@ -208,6 +214,7 @@ export const useGame = ({ onEvents, onBeforeChange }: Options = {}) => {
     launchFreeUntilLose,
     launchOkaun,
     launchZ,
+    launchYusri,
     adjustOkaun,
     setOkaunValue,
     startNewGame,

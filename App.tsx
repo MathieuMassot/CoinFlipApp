@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -16,7 +16,9 @@ import OkaunPanel from './components/OkaunPanel';
 import SmallButton from './components/SmallButton';
 import StatsPage from './components/StatsPage';
 import { Flip } from './flip';
-import { okaunProgression } from './game';
+import SlotReel from './components/SlotReel';
+import { GameEvent, okaunProgression } from './game';
+import { useSounds } from './useSounds';
 import { useGame } from './useGame';
 import { useReveal } from './useReveal';
 
@@ -25,12 +27,29 @@ type Overlay = 'z' | 'okaun' | null;
 const CoinFlipApp = () => {
   useKeepAwake();
   const { reveal, start, skip } = useReveal();
-  const g = useGame({ onBeforeChange: skip });
+  const sounds = useSounds();
+  const pendingEvents = useRef<GameEvent[]>([]);
+  const queueEvents = useCallback((events: GameEvent[]) => {
+    pendingEvents.current.push(...events);
+  }, []);
+  const g = useGame({ onBeforeChange: skip, onEvents: queueEvents });
+  const [yusriCount, setYusriCount] = useState(5);
   const [countText, setCountText] = useState('1');
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [page, setPage] = useState(0);
   const [overlay, setOverlay] = useState<Overlay>(null);
   const count = Math.max(0, parseInt(countText, 10) || 0);
+
+  // Les sons attendent la fin du dévoilement (ou son annulation)
+  useEffect(() => {
+    if (!reveal && pendingEvents.current.length > 0) {
+      const events = pendingEvents.current;
+      pendingEvents.current = [];
+      if (events.some(e => e.type === 'yusriJackpot')) {
+        sounds.play('laugh');
+      }
+    }
+  });
 
   if (!g.loaded) {
     return (
@@ -77,12 +96,26 @@ const CoinFlipApp = () => {
       </View>
 
       <View style={styles.triangle}>
-        <BoardCard
-          title="Yusri"
-          active={board.yusri}
-          onPlace={() => g.toggleBoard('yusri')}
-          onRemove={() => g.toggleBoard('yusri')}
-        />
+        <View style={styles.yusriRow}>
+          <View style={styles.yusriSide} />
+          <BoardCard
+            title="Yusri"
+            active={board.yusri}
+            onPlace={() => g.toggleBoard('yusri')}
+            onRemove={() => g.toggleBoard('yusri')}
+            onPress={() => launch(() => g.launchYusri(yusriCount))}
+          >
+            <Text style={styles.big}>×{yusriCount}</Text>
+            <Text style={styles.hintSmall}>touche = lancer</Text>
+          </BoardCard>
+          <View style={styles.yusriSide}>
+            <SlotReel
+              value={yusriCount}
+              onChange={setYusriCount}
+              enabled={board.yusri}
+            />
+          </View>
+        </View>
         <View style={styles.triangleRow}>
           <BoardCard
             title="Z"
@@ -266,6 +299,13 @@ const styles = StyleSheet.create({
   overlayTitle: { color: '#ecf0f1', fontSize: 20, fontWeight: 'bold' },
   zNumber: { color: '#ffffff', fontSize: 56, fontWeight: 'bold' },
   line: { color: '#bdc3c7', fontSize: 15 },
+    yusriRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  yusriSide: { width: 60, alignItems: 'center' },
 });
 
 export default CoinFlipApp;
