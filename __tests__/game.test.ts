@@ -1,97 +1,129 @@
 import { Flip } from '../flip';
-import { Board, newTurn, recordFlips, summarizeTurn } from '../game';
+import {
+  FlipSource,
+  GameState,
+  Player,
+  endTurn,
+  markCardsDrawn,
+  newGame,
+  recordFlips,
+  setBoard,
+  setMyTurn,
+  setOkaunBase,
+  setOkaunNow,
+} from '../game';
 
 const win: Flip = { result: 'Win', coins: ['Win'] };
 const lose: Flip = { result: 'Lose', coins: ['Lose'] };
+const thumbWin: Flip = { result: 'Win', coins: ['Lose', 'Win'] };
+const thumbLose: Flip = { result: 'Lose', coins: ['Lose', 'Lose'] };
 
-const board = (b: Partial<Board> = {}): Board => ({
-  thumb: false,
-  zndrsplt: false,
-  okaun: false,
-  ...b,
-});
+const play = (
+  state: GameState,
+  flips: Flip[],
+  source: FlipSource = 'manual',
+  player: Player = 'me',
+) => recordFlips(state, flips, { player, source });
 
 describe('Okaun', () => {
+  const withOkaun = () => setBoard(newGame(), { okaun: true });
+
   it('un 3/3 avec 5 réussites devient 96/96', () => {
-    const turn = recordFlips(
-      newTurn(1, { power: 3, toughness: 3 }),
-      [win, win, win, win, win, lose],
-      { player: 'me', source: 'okaun', board: board({ okaun: true }) },
-    );
-    expect(summarizeTurn(turn).okaun).toEqual({
-      doublings: 5,
-      power: 96,
-      toughness: 96,
-    });
+    const s = play(withOkaun(), [win, win, win, win, win, lose], 'okaun');
+    expect(s.okaunNow).toEqual({ power: 96, toughness: 96 });
+    expect(s.stats.okaunMax).toEqual({ power: 96, toughness: 96 });
   });
 
-  it('les réussites adverses comptent aussi', () => {
-    const turn = recordFlips(newTurn(1, { power: 3, toughness: 3 }), [win], {
-      player: 'opponent',
-      source: 'manual',
-      board: board({ okaun: true }),
-    });
-    expect(summarizeTurn(turn).okaun.power).toBe(6);
+  it('les réussites adverses doublent aussi Okaun', () => {
+    const s = play(withOkaun(), [win], 'manual', 'opponent');
+    expect(s.okaunNow.power).toBe(6);
   });
 
   it('sans Okaun sur le terrain, rien ne double', () => {
-    const turn = recordFlips(newTurn(1, { power: 3, toughness: 3 }), [win], {
-      player: 'me',
-      source: 'manual',
-      board: board(),
+    expect(play(newGame(), [win]).okaunNow.power).toBe(3);
+  });
+
+  it("l'ordre compte : un bonus reçu en cours de tour n'est pas doublé avant", () => {
+    let s = play(withOkaun(), [win], 'okaun'); // 6/6
+    s = setOkaunNow(s, { power: 10, toughness: 8 }); // artefact équipé
+    s = play(s, [win], 'okaun'); // 20/16
+    expect(s.okaunNow).toEqual({ power: 20, toughness: 16 });
+  });
+
+  it('la fin de tour le ramène à sa base mais garde le maximum', () => {
+    let s = play(withOkaun(), [win, win], 'okaun'); // 12/12
+    s = endTurn(s);
+    expect(s.okaunNow).toEqual({ power: 3, toughness: 3 });
+    expect(s.stats.okaunMax.power).toBe(12);
+    expect(s.turn.number).toBe(2);
+  });
+
+  it('une nouvelle base est suivie par la valeur du moment, sauf si Okaun a déjà doublé', () => {
+    const a = setOkaunBase(withOkaun(), { power: 4, toughness: 5 });
+    expect(a.okaunNow).toEqual({ power: 4, toughness: 5 });
+
+    const b = setOkaunBase(play(withOkaun(), [win], 'okaun'), {
+      power: 4,
+      toughness: 5,
     });
-    expect(summarizeTurn(turn).okaun.power).toBe(3);
+    expect(b.okaunBase).toEqual({ power: 4, toughness: 5 });
+    expect(b.okaunNow).toEqual({ power: 6, toughness: 6 });
+  });
+
+  it('en arrivant sur le terrain, il repart de sa base', () => {
+    const s = setBoard(setOkaunBase(newGame(), { power: 4, toughness: 5 }), {
+      okaun: true,
+    });
+    expect(s.okaunNow).toEqual({ power: 4, toughness: 5 });
   });
 });
 
 describe('Zndrsplt', () => {
-  it('1 carte par lancer réussi, seulement les miens', () => {
-    let turn = recordFlips(newTurn(1), [win, win, lose], {
-      player: 'me',
-      source: 'manual',
-      board: board({ zndrsplt: true }),
-    });
-    turn = recordFlips(turn, [win], {
-      player: 'opponent',
-      source: 'manual',
-      board: board({ zndrsplt: true }),
-    });
-    expect(summarizeTurn(turn).cards.zndrsplt).toBe(2);
+  it('1 carte par réussite, seulement les miennes', () => {
+    let s = play(setBoard(newGame(), { zndrsplt: true }), [win, win, lose, win]);
+    s = play(s, [win], 'manual', 'opponent');
+    expect(s.pendingDraws).toBe(3);
+    expect(s.stats.cardsZndrsplt).toBe(3);
+  });
+
+  it('le compteur repart de zéro, pas la statistique', () => {
+    let s = play(setBoard(newGame(), { zndrsplt: true }), [win, win]);
+    s = markCardsDrawn(s);
+    expect(s.pendingDraws).toBe(0);
+    expect(s.stats.cardsZndrsplt).toBe(2);
   });
 });
 
 describe('Yusri', () => {
   it('3 réussites et 2 échecs : 3 cartes et 4 PV perdus', () => {
-    const turn = recordFlips(newTurn(1), [win, win, win, lose, lose], {
-      player: 'me',
-      source: 'yusri',
-      board: board(),
-    });
-    const s = summarizeTurn(turn);
-    expect(s.cards.yusri).toBe(3);
-    expect(s.lifeLost).toBe(4);
-    expect(s.yusriJackpot).toBe(false);
-  });
-
-  it('5 réussites sur 5 : jackpot', () => {
-    const turn = recordFlips(newTurn(1), [win, win, win, win, win], {
-      player: 'me',
-      source: 'yusri',
-      board: board(),
-    });
-    expect(summarizeTurn(turn).yusriJackpot).toBe(true);
+    const s = play(newGame(), [win, win, win, lose, lose], 'yusri');
+    expect(s.stats.cardsYusri).toBe(3);
+    expect(s.stats.lifeLost).toBe(4);
+    expect(s.pendingDraws).toBe(3);
   });
 
   it('les cartes de Yusri et de Zndrsplt se cumulent', () => {
-    const turn = recordFlips(newTurn(1), [win, win, lose, lose, lose], {
-      player: 'me',
-      source: 'yusri',
-      board: board({ zndrsplt: true }),
-    });
-    expect(summarizeTurn(turn).cards).toEqual({
-      yusri: 2,
-      zndrsplt: 2,
-      total: 4,
-    });
+    const s = play(
+      setBoard(newGame(), { zndrsplt: true }),
+      [win, win, lose],
+      'yusri',
+    );
+    expect(s.pendingDraws).toBe(4);
+  });
+});
+
+describe('Statistiques', () => {
+  it('distinguent les lancers avec et sans Pouce de Krark', () => {
+    const s = play(newGame(), [win, thumbWin, thumbWin, lose, thumbLose]);
+    expect(s.stats.wins).toEqual({ withThumb: 2, withoutThumb: 1 });
+    expect(s.stats.losses).toEqual({ withThumb: 1, withoutThumb: 1 });
+  });
+});
+
+describe('Tours', () => {
+  it('« mon tour » ouvre un nouveau tour vide', () => {
+    let s = play(newGame(), [win, lose]);
+    s = setMyTurn(s, true);
+    expect(s.turn).toMatchObject({ number: 2, mine: true, flips: [] });
   });
 });
