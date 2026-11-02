@@ -24,6 +24,10 @@ jest.mock('../storage', () => ({
   loadSaved: jest.fn(() => new Promise(() => {})),
   writeSaved: jest.fn(() => Promise.resolve()),
 }));
+jest.mock('react-native-reanimated', () => ({
+  __esModule: true,
+  default: {},
+}));
 
 test('renders correctly', async () => {
   await ReactTestRenderer.act(() => {

@@ -15,8 +15,10 @@
     "@sayem314/react-native-keep-awake": "^2.0.0",
     "react": "19.3.0",
     "react-native": "0.88.1",
+    "react-native-reanimated": "^4.7.1",
     "react-native-safe-area-context": "^5.5.2",
-    "react-native-sound": "^0.13.0"
+    "react-native-sound": "^0.13.0",
+    "react-native-worklets": "^0.13.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
