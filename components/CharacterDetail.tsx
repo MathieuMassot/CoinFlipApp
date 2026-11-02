@@ -1,6 +1,5 @@
 import React, { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import SmallButton from './SmallButton';
 
 const OVERLAP = 46; // le personnage déborde sur le haut du panneau
 
@@ -8,17 +7,10 @@ type Props = {
   title: string;
   art: ReactNode; // le personnage, en grand
   artSize: number;
-  onRemove: () => void;
   children: ReactNode; // les réglages et actions
 };
 
-const CharacterDetail = ({
-  title,
-  art,
-  artSize,
-  onRemove,
-  children,
-}: Props) => (
+const CharacterDetail = ({ title, art, artSize, children }: Props) => (
   <View style={styles.wrapper}>
     <View style={[styles.artBox, { width: artSize, height: artSize }]}>
       <View
@@ -35,10 +27,9 @@ const CharacterDetail = ({
       />
       {art}
     </View>
-    <View style={[styles.panel, { paddingTop: OVERLAP + 12 }]}>
+    <View style={[styles.panel, { paddingTop: OVERLAP + 8 }]}>
       <Text style={styles.title}>{title}</Text>
       {children}
-      <SmallButton title="Retirer du board" onPress={onRemove} danger />
     </View>
   </View>
 );
@@ -53,11 +44,11 @@ const styles = StyleSheet.create({
     borderColor: '#f1c40f',
     borderWidth: 2,
     borderRadius: 22,
-    padding: 16,
+    padding: 14,
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
-  title: { color: '#ecf0f1', fontSize: 20, fontWeight: 'bold' },
+  title: { color: '#ecf0f1', fontSize: 18, fontWeight: 'bold' },
 });
 
 export default CharacterDetail;

@@ -1,13 +1,14 @@
 import React, { ReactNode } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useDoubleTap } from '../useDoubleTap';
 
 type Props = {
   title: string;
   active: boolean; // sur le board ?
-  onPlace: () => void;
-  onRemove: () => void;
-  onPress?: () => void; // appui court sur une carte posée
-  onLongPress?: () => void; // appui long sur une carte posée
+  onPlace: () => void; // appui sur une carte absente : poser
+  onRemove: () => void; // appui long : retirer du board
+  onOpen?: () => void; // appui court (à venir pour Yusri)
+  onLaunch?: () => void; // double appui : lancer
   children?: ReactNode;
 };
 
@@ -16,29 +17,31 @@ const BoardCard = ({
   active,
   onPlace,
   onRemove,
-  onPress,
-  onLongPress,
+  onOpen,
+  onLaunch,
   children,
-}: Props) => (
-  <TouchableOpacity
-    style={[styles.card, active ? styles.cardActive : styles.cardInactive]}
-    onPress={active ? onPress : onPlace}
-    onLongPress={active ? onLongPress : undefined}
-    activeOpacity={0.8}
-  >
-    <Text style={styles.title}>{title}</Text>
-    {active ? (
-      <View style={styles.body}>{children}</View>
-    ) : (
-      <Text style={styles.hint}>Poser</Text>
-    )}
-    {active && (
-      <TouchableOpacity style={styles.cross} onPress={onRemove} hitSlop={8}>
-        <Text style={styles.crossText}>✕</Text>
-      </TouchableOpacity>
-    )}
-  </TouchableOpacity>
-);
+}: Props) => {
+  const tap = useDoubleTap(
+    () => onOpen?.(),
+    () => onLaunch?.(),
+  );
+
+  return (
+    <TouchableOpacity
+      style={[styles.card, active ? styles.cardActive : styles.cardInactive]}
+      onPress={active ? tap : onPlace}
+      onLongPress={active ? onRemove : undefined}
+      activeOpacity={0.8}
+    >
+      <Text style={styles.title}>{title}</Text>
+      {active ? (
+        <View style={styles.body}>{children}</View>
+      ) : (
+        <Text style={styles.hint}>Poser</Text>
+      )}
+    </TouchableOpacity>
+  );
+};
 
 const styles = StyleSheet.create({
   card: {
@@ -59,16 +62,6 @@ const styles = StyleSheet.create({
   title: { color: '#ecf0f1', fontSize: 16, fontWeight: 'bold' },
   body: { alignItems: 'center', marginTop: 4 },
   hint: { color: '#95a5a6', fontSize: 12, marginTop: 4 },
-  cross: {
-    position: 'absolute',
-    top: 2,
-    right: 4,
-    width: 22,
-    height: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  crossText: { color: '#e67e22', fontSize: 14, fontWeight: 'bold' },
 });
 
 export default BoardCard;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import SmallButton from './SmallButton';
 import { Stats } from '../game';
 
@@ -56,24 +56,24 @@ const OkaunPanel = ({ now, base, onAdjust, onSetValue }: Props) => {
 
   return (
     <View style={styles.panel}>
-      <Text style={styles.big}>
-        {now.power}/{now.toughness}
-      </Text>
-      <Text style={styles.sub}>
-        Base : {base.power}/{base.toughness}
-      </Text>
+      <View style={styles.valueRow}>
+        <Text style={styles.big}>
+          {now.power}/{now.toughness}
+        </Text>
+        <Text style={styles.sub}>
+          base {base.power}/{base.toughness}
+        </Text>
+      </View>
 
-      <View style={styles.modes}>
-        <SmallButton
-          title="Artefact (permanent)"
-          onPress={() => setPermanent(true)}
-          selected={permanent}
-        />
-        <SmallButton
-          title="Ce tour seulement"
-          onPress={() => setPermanent(false)}
-          selected={!permanent}
-        />
+      {/* À gauche : permanent (artefact). À droite : ce tour seulement. */}
+      <View style={styles.modeRow}>
+        <Text style={[styles.mode, permanent && styles.modeOn]}>
+          Permanent
+        </Text>
+        <Switch value={!permanent} onValueChange={v => setPermanent(!v)} />
+        <Text style={[styles.mode, !permanent && styles.modeOn]}>
+          Ce tour seulement
+        </Text>
       </View>
 
       <StatRow
@@ -95,11 +95,13 @@ const OkaunPanel = ({ now, base, onAdjust, onSetValue }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  panel: { alignItems: 'center', gap: 10 },
-  title: { color: '#ecf0f1', fontSize: 20, fontWeight: 'bold' },
-  big: { color: '#ffffff', fontSize: 44, fontWeight: 'bold' },
-  sub: { color: '#95a5a6', fontSize: 14 },
-  modes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
+  panel: { alignItems: 'center', gap: 8 },
+  valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  big: { color: '#ffffff', fontSize: 34, fontWeight: 'bold' },
+  sub: { color: '#95a5a6', fontSize: 13 },
+  modeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  mode: { color: '#7f8c8d', fontSize: 13 },
+  modeOn: { color: '#f1c40f', fontWeight: 'bold' },
   statRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statLabel: { color: '#ecf0f1', fontSize: 14, width: 62 },
   statInput: {

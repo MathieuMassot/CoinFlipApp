@@ -119,10 +119,10 @@ const CoinFlipApp = () => {
             active={board.yusri}
             onPlace={() => g.toggleBoard('yusri')}
             onRemove={() => g.toggleBoard('yusri')}
-            onPress={() => launch(() => g.launchYusri(yusriCount))}
+            onLaunch={() => launch(() => g.launchYusri(yusriCount))}
           >
             <Text style={styles.big}>×{yusriCount}</Text>
-            <Text style={styles.hintSmall}>touche = lancer</Text>
+            <Text style={styles.hintSmall}>double appui = lancer</Text>
           </BoardCard>
           <View style={styles.yusriSide}>
             <SlotReel
@@ -137,8 +137,9 @@ const CoinFlipApp = () => {
             size={ART}
             present={board.zndrsplt}
             onPlace={() => g.toggleBoard('zndrsplt')}
-            onPress={() => setOverlay('z')}
-            onLongPress={() => launch(g.launchZ)}
+            onRemove={() => g.toggleBoard('zndrsplt')}
+            onOpen={() => setOverlay('z')}
+            onLaunch={() => launch(g.launchZ)}
             badge={
               <Text style={styles.big}>À piocher : {game.pendingDraws}</Text>
             }
@@ -156,8 +157,9 @@ const CoinFlipApp = () => {
             size={ART}
             present={board.okaun}
             onPlace={() => g.toggleBoard('okaun')}
-            onPress={() => setOverlay('okaun')}
-            onLongPress={() => launch(g.launchOkaun)}
+            onRemove={() => g.toggleBoard('okaun')}
+            onOpen={() => setOverlay('okaun')}
+            onLaunch={() => launch(g.launchOkaun)}
             badge={
               <Text style={styles.big}>
                 {okaunShown.power}/{okaunShown.toughness}
@@ -255,10 +257,6 @@ const CoinFlipApp = () => {
           title="Okaun"
           artSize={ART_BIG}
           art={<OkaunArt size={ART_BIG} present={board.okaun} />}
-          onRemove={() => {
-            g.toggleBoard('okaun');
-            setOverlay(null);
-          }}
         >
           <OkaunPanel
             now={game.okaunNow}
@@ -274,10 +272,6 @@ const CoinFlipApp = () => {
           title="Z"
           artSize={ART_BIG}
           art={<ZndrspltArt size={ART_BIG} present={board.zndrsplt} />}
-          onRemove={() => {
-            g.toggleBoard('zndrsplt');
-            setOverlay(null);
-          }}
         >
           <Text style={styles.zNumber}>{game.pendingDraws}</Text>
           <Text style={styles.line}>cartes à piocher</Text>
