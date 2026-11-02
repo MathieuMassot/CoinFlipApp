@@ -27,12 +27,20 @@ const CharacterSlot = ({
 }: Props) => {
   const tap = useDoubleTap(onOpen, onLaunch);
 
+  // Toujours branché, même sur une silhouette : sinon, au relâchement,
+  // l'appui long retire le personnage puis est pris pour un appui qui le repose
+  const handleLongPress = () => {
+    if (present) {
+      onRemove();
+    }
+  };
+
   return (
     <TouchableOpacity
       activeOpacity={0.85}
       style={{ width: size }}
       onPress={present ? tap : onPlace}
-      onLongPress={present ? onRemove : undefined}
+      onLongPress={handleLongPress}
     >
       <View style={{ width: size, height: size }}>
         {children}

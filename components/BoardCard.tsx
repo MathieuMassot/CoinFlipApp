@@ -25,12 +25,17 @@ const BoardCard = ({
     () => onOpen?.(),
     () => onLaunch?.(),
   );
+    const handleLongPress = () => {
+    if (active) {
+      onRemove();
+    }
+  };
 
   return (
     <TouchableOpacity
       style={[styles.card, active ? styles.cardActive : styles.cardInactive]}
       onPress={active ? tap : onPlace}
-      onLongPress={active ? onRemove : undefined}
+      onLongPress={handleLongPress}
       activeOpacity={0.8}
     >
       <Text style={styles.title}>{title}</Text>
