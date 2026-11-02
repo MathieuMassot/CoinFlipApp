@@ -7,8 +7,13 @@ import {
   Text,
   TextInput,
   View,
+  StatusBar,
 } from 'react-native';
 import { useKeepAwake } from '@sayem314/react-native-keep-awake';
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import BoardCard from './components/BoardCard';
 import CardOverlay from './components/CardOverlay';
 import LastFlips from './components/LastFlips';
@@ -34,6 +39,7 @@ const ART_BIG = 230; // taille dans le détail
 
 const CoinFlipApp = () => {
   useKeepAwake();
+  const insets = useSafeAreaInsets();
   const { reveal, start, skip } = useReveal();
   const sounds = useSounds();
   const pendingEvents = useRef<GameEvent[]>([]);
@@ -59,9 +65,17 @@ const CoinFlipApp = () => {
     }
   });
 
+    // Marges pour ne pas passer sous l'heure, l'appareil photo ou la barre de navigation
+  const safeStyle = {
+    paddingTop: insets.top,
+    paddingBottom: insets.bottom + 8,
+    paddingLeft: insets.left,
+    paddingRight: insets.right,
+  };
+
   if (!g.loaded) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center, safeStyle]}>
         <ActivityIndicator size="large" color="#ecf0f1" />
       </View>
     );
@@ -108,6 +122,11 @@ const CoinFlipApp = () => {
           <Switch value={turn.mine} onValueChange={g.setMyTurn} />
         </View>
         <SmallButton title="+1 adv." onPress={g.opponentWin} />
+        <SmallButton
+          title="Fin de tour"
+          onPress={g.endTurn}
+          disabled={turn.doublings === 0}
+        />
         <SmallButton title="↶" onPress={g.undo} disabled={!g.canUndo} />
       </View>
 
@@ -164,11 +183,6 @@ const CoinFlipApp = () => {
               <Text style={styles.big}>
                 {okaunShown.power}/{okaunShown.toughness}
               </Text>
-            }
-            overlay={
-              turn.doublings > 0 ? (
-                <SmallButton title="Fin de tour" onPress={g.endTurn} />
-              ) : null
             }
           >
             <OkaunArt size={ART} present={board.okaun} />
@@ -230,7 +244,8 @@ const CoinFlipApp = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, safeStyle]}>
+      <StatusBar barStyle="light-content" />
       <ScrollView
         horizontal
         pagingEnabled
@@ -339,4 +354,10 @@ const styles = StyleSheet.create({
   yusriSide: { width: 60, alignItems: 'center' },
 });
 
-export default CoinFlipApp;
+const App = () => (
+  <SafeAreaProvider>
+    <CoinFlipApp />
+  </SafeAreaProvider>
+);
+
+export default App;
