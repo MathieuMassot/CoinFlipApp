@@ -1,5 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import NumberPad from './NumberPad';
 import SmallButton from './SmallButton';
 import { Stats } from '../game';
 
@@ -7,41 +14,21 @@ type StatRowProps = {
   label: string;
   value: number;
   onDelta: (d: number) => void;
-  onSet: (v: number) => void;
+  onEdit: () => void;
 };
 
-const StatRow = ({ label, value, onDelta, onSet }: StatRowProps) => {
-  const [text, setText] = useState(String(value));
-
-  useEffect(() => {
-    setText(String(value));
-  }, [value]);
-
-  const commitText = () => {
-    const v = parseInt(text, 10);
-    if (Number.isFinite(v) && v >= 0) {
-      onSet(v);
-    } else {
-      setText(String(value));
-    }
-  };
-
-  return (
-    <View style={styles.statRow}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <SmallButton title="−1" onPress={() => onDelta(-1)} />
-      <SmallButton title="+1" onPress={() => onDelta(1)} />
-      <SmallButton title="+3" onPress={() => onDelta(3)} />
-      <TextInput
-        style={styles.statInput}
-        value={text}
-        onChangeText={setText}
-        onEndEditing={commitText}
-        keyboardType="number-pad"
-      />
-    </View>
-  );
-};
+const StatRow = ({ label, value, onDelta, onEdit }: StatRowProps) => (
+  <View style={styles.statRow}>
+    <Text style={styles.statLabel}>{label}</Text>
+    <SmallButton title="−1" onPress={() => onDelta(-1)} />
+    <SmallButton title="+1" onPress={() => onDelta(1)} />
+    <SmallButton title="+3" onPress={() => onDelta(3)} />
+    {/* On touche la valeur pour la saisir au pavé numérique */}
+    <TouchableOpacity style={styles.statValue} onPress={onEdit}>
+      <Text style={styles.statValueText}>{value}</Text>
+    </TouchableOpacity>
+  </View>
+);
 
 type Props = {
   now: Stats;
@@ -50,9 +37,22 @@ type Props = {
   onSetValue: (value: Stats, permanent: boolean) => void;
 };
 
+type Editing = 'power' | 'toughness' | null;
+
 const OkaunPanel = ({ now, base, onAdjust, onSetValue }: Props) => {
   const [permanent, setPermanent] = useState(true);
+  const [editing, setEditing] = useState<Editing>(null);
   const shown = permanent ? base : now;
+
+  const submit = (v: number) => {
+    onSetValue(
+      editing === 'power'
+        ? { power: v, toughness: shown.toughness }
+        : { power: shown.power, toughness: v },
+      permanent,
+    );
+    setEditing(null);
+  };
 
   return (
     <View style={styles.panel}>
@@ -70,26 +70,43 @@ const OkaunPanel = ({ now, base, onAdjust, onSetValue }: Props) => {
         <Text style={[styles.mode, permanent && styles.modeOn]}>
           Permanent
         </Text>
-        <Switch value={!permanent} onValueChange={v => setPermanent(!v)} />
+        <Switch
+          value={!permanent}
+          onValueChange={v => setPermanent(!v)}
+          disabled={editing !== null}
+        />
         <Text style={[styles.mode, !permanent && styles.modeOn]}>
           Ce tour seulement
         </Text>
       </View>
 
-      <StatRow
-        label="Attaque"
-        value={shown.power}
-        onDelta={d => onAdjust({ power: d, toughness: 0 }, permanent)}
-        onSet={v =>
-          onSetValue({ power: v, toughness: shown.toughness }, permanent)
-        }
-      />
-      <StatRow
-        label="Défense"
-        value={shown.toughness}
-        onDelta={d => onAdjust({ power: 0, toughness: d }, permanent)}
-        onSet={v => onSetValue({ power: shown.power, toughness: v }, permanent)}
-      />
+      {editing ? (
+        <NumberPad
+          key={editing}
+          title={`${editing === 'power' ? 'Force' : 'Endurance'} · ${
+            permanent ? 'permanent' : 'ce tour'
+          }`}
+          initial={editing === 'power' ? shown.power : shown.toughness}
+          maxDigits={7}
+          onSubmit={submit}
+          onCancel={() => setEditing(null)}
+        />
+      ) : (
+        <>
+          <StatRow
+            label="Force"
+            value={shown.power}
+            onDelta={d => onAdjust({ power: d, toughness: 0 }, permanent)}
+            onEdit={() => setEditing('power')}
+          />
+          <StatRow
+            label="Endurance"
+            value={shown.toughness}
+            onDelta={d => onAdjust({ power: 0, toughness: d }, permanent)}
+            onEdit={() => setEditing('toughness')}
+          />
+        </>
+      )}
     </View>
   );
 };
@@ -103,17 +120,17 @@ const styles = StyleSheet.create({
   mode: { color: '#7f8c8d', fontSize: 13 },
   modeOn: { color: '#f1c40f', fontWeight: 'bold' },
   statRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statLabel: { color: '#ecf0f1', fontSize: 14, width: 62 },
-  statInput: {
-    width: 52,
+  statLabel: { color: '#ecf0f1', fontSize: 13, width: 70 },
+  statValue: {
+    width: 56,
+    height: 36,
     borderWidth: 1,
     borderColor: '#7f8c8d',
     borderRadius: 10,
-    color: '#ecf0f1',
-    fontSize: 17,
-    textAlign: 'center',
-    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  statValueText: { color: '#ecf0f1', fontSize: 16 },
 });
 
 export default OkaunPanel;

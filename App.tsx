@@ -5,7 +5,7 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TextInput,
+  TouchableOpacity,
   View,
   StatusBar,
 } from 'react-native';
@@ -31,6 +31,7 @@ import CharacterSlot from './components/CharacterSlot';
 import OkaunArt from './components/characters/OkaunArt';
 import ZndrspltArt from './components/characters/ZndrspltArt';
 import CharacterDetail from './components/CharacterDetail';
+import NumberPad from './components/NumberPad';
 
 type Overlay = 'z' | 'okaun' | null;
 
@@ -53,6 +54,8 @@ const CoinFlipApp = () => {
   const [page, setPage] = useState(0);
   const [overlay, setOverlay] = useState<Overlay>(null);
   const count = Math.max(0, parseInt(countText, 10) || 0);
+
+  const [padOpen, setPadOpen] = useState(false);
 
   // Les sons attendent la fin du dévoilement (ou son annulation)
   useEffect(() => {
@@ -204,12 +207,9 @@ const CoinFlipApp = () => {
           onPress={() => addToCount(-1)}
           onLongPress={() => addToCount(-10)}
         />
-        <TextInput
-          style={styles.input}
-          value={countText}
-          onChangeText={setCountText}
-          keyboardType="number-pad"
-        />
+        <TouchableOpacity style={styles.input} onPress={() => setPadOpen(true)}>
+          <Text style={styles.inputText}>{count}</Text>
+        </TouchableOpacity>
         <SmallButton
           title="+"
           onPress={() => addToCount(1)}
@@ -284,7 +284,7 @@ const CoinFlipApp = () => {
 
       <CardOverlay visible={overlay === 'z'} onClose={() => setOverlay(null)}>
         <CharacterDetail
-          title="Z"
+          title="Zndrsplt"
           artSize={ART_BIG}
           art={<ZndrspltArt size={ART_BIG} present={board.zndrsplt} />}
         >
@@ -298,6 +298,20 @@ const CoinFlipApp = () => {
             }}
           />
         </CharacterDetail>
+      </CardOverlay>
+            <CardOverlay visible={padOpen} onClose={() => setPadOpen(false)}>
+        <View style={styles.padCard}>
+          <NumberPad
+            title="Nombre de lancers"
+            initial={count}
+            maxDigits={5}
+            onSubmit={v => {
+              setCountText(String(v));
+              setPadOpen(false);
+            }}
+            onCancel={() => setPadOpen(false)}
+          />
+        </View>
       </CardOverlay>
     </View>
   );
@@ -331,14 +345,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   input: {
-    width: 56,
+    width: 62,
+    height: 38,
     borderWidth: 1,
     borderColor: '#7f8c8d',
     borderRadius: 10,
-    color: '#ecf0f1',
-    fontSize: 18,
-    textAlign: 'center',
-    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inputText: { color: '#ecf0f1', fontSize: 18 },
+  padCard: {
+    backgroundColor: '#1f2a38',
+    borderColor: '#f1c40f',
+    borderWidth: 2,
+    borderRadius: 22,
+    padding: 16,
+    alignItems: 'center',
   },
   dots: { color: '#7f8c8d', textAlign: 'center', fontSize: 12 },
   zPanel: { alignItems: 'center', gap: 10 },
