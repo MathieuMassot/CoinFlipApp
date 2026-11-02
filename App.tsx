@@ -22,8 +22,13 @@ import { GameEvent, okaunProgression } from './game';
 import { useSounds } from './useSounds';
 import { useGame } from './useGame';
 import { useReveal } from './useReveal';
+import CharacterSlot from './components/CharacterSlot';
+import OkaunArt from './components/characters/OkaunArt';
+import ZndrspltArt from './components/characters/ZndrspltArt';
 
 type Overlay = 'z' | 'okaun' | null;
+
+const ART = 124; // taille d'affichage des personnages
 
 const CoinFlipApp = () => {
   useKeepAwake();
@@ -126,17 +131,19 @@ const CoinFlipApp = () => {
           </View>
         </View>
         <View style={styles.triangleRow}>
-          <BoardCard
-            title="Z"
-            active={board.zndrsplt}
+          <CharacterSlot
+            size={ART}
+            present={board.zndrsplt}
             onPlace={() => g.toggleBoard('zndrsplt')}
             onRemove={() => g.toggleBoard('zndrsplt')}
             onPress={() => setOverlay('z')}
             onLongPress={() => launch(g.launchZ)}
+            badge={
+              <Text style={styles.big}>À piocher : {game.pendingDraws}</Text>
+            }
           >
-            <Text style={styles.big}>À piocher : {game.pendingDraws}</Text>
-            <Text style={styles.hintSmall}>maintenir = lancer</Text>
-          </BoardCard>
+            <ZndrspltArt size={ART} present={board.zndrsplt} />
+          </CharacterSlot>
           <View style={styles.thumb}>
             <Text style={styles.thumbLabel}>Pouce</Text>
             <Switch
@@ -144,22 +151,26 @@ const CoinFlipApp = () => {
               onValueChange={() => g.toggleBoard('thumb')}
             />
           </View>
-          <BoardCard
-            title="Okaun"
-            active={board.okaun}
+          <CharacterSlot
+            size={ART}
+            present={board.okaun}
             onPlace={() => g.toggleBoard('okaun')}
             onRemove={() => g.toggleBoard('okaun')}
             onPress={() => setOverlay('okaun')}
             onLongPress={() => launch(g.launchOkaun)}
+            badge={
+              <Text style={styles.big}>
+                {okaunShown.power}/{okaunShown.toughness}
+              </Text>
+            }
+            overlay={
+              turn.doublings > 0 ? (
+                <SmallButton title="Fin de tour" onPress={g.endTurn} />
+              ) : null
+            }
           >
-            <Text style={styles.big}>
-              {okaunShown.power}/{okaunShown.toughness}
-            </Text>
-            <Text style={styles.hintSmall}>maintenir = lancer</Text>
-            {turn.doublings > 0 && (
-              <SmallButton title="Fin de tour" onPress={g.endTurn} />
-            )}
-          </BoardCard>
+            <OkaunArt size={ART} present={board.okaun} />
+          </CharacterSlot>
         </View>
       </View>
 
