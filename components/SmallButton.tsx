@@ -7,6 +7,7 @@ type Props = {
   onLongPress?: () => void;
   disabled?: boolean;
   selected?: boolean;
+  danger?: boolean;
 };
 
 const SmallButton = ({
@@ -15,11 +16,13 @@ const SmallButton = ({
   onLongPress,
   disabled = false,
   selected = false,
+  danger = false,
 }: Props) => (
   <TouchableOpacity
     style={[
       styles.button,
       selected && styles.selected,
+      danger && styles.danger,
       disabled && styles.disabled,
     ]}
     onPress={onPress}
@@ -40,6 +43,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   selected: { backgroundColor: '#27ae60' },
+  danger: { backgroundColor: '#a93226' },
   disabled: { backgroundColor: '#4b5563' },
   text: { color: 'white', fontSize: 15, fontWeight: 'bold' },
 });

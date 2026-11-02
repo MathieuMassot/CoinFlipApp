@@ -25,10 +25,12 @@ import { useReveal } from './useReveal';
 import CharacterSlot from './components/CharacterSlot';
 import OkaunArt from './components/characters/OkaunArt';
 import ZndrspltArt from './components/characters/ZndrspltArt';
+import CharacterDetail from './components/CharacterDetail';
 
 type Overlay = 'z' | 'okaun' | null;
 
 const ART = 124; // taille d'affichage des personnages
+const ART_BIG = 230; // taille dans le détail
 
 const CoinFlipApp = () => {
   useKeepAwake();
@@ -135,7 +137,6 @@ const CoinFlipApp = () => {
             size={ART}
             present={board.zndrsplt}
             onPlace={() => g.toggleBoard('zndrsplt')}
-            onRemove={() => g.toggleBoard('zndrsplt')}
             onPress={() => setOverlay('z')}
             onLongPress={() => launch(g.launchZ)}
             badge={
@@ -155,7 +156,6 @@ const CoinFlipApp = () => {
             size={ART}
             present={board.okaun}
             onPlace={() => g.toggleBoard('okaun')}
-            onRemove={() => g.toggleBoard('okaun')}
             onPress={() => setOverlay('okaun')}
             onLongPress={() => launch(g.launchOkaun)}
             badge={
@@ -251,17 +251,34 @@ const CoinFlipApp = () => {
       </ScrollView>
 
       <CardOverlay visible={overlay === 'okaun'} onClose={() => setOverlay(null)}>
-        <OkaunPanel
-          now={game.okaunNow}
-          base={game.okaunBase}
-          onAdjust={g.adjustOkaun}
-          onSetValue={g.setOkaunValue}
-        />
+        <CharacterDetail
+          title="Okaun"
+          artSize={ART_BIG}
+          art={<OkaunArt size={ART_BIG} present={board.okaun} />}
+          onRemove={() => {
+            g.toggleBoard('okaun');
+            setOverlay(null);
+          }}
+        >
+          <OkaunPanel
+            now={game.okaunNow}
+            base={game.okaunBase}
+            onAdjust={g.adjustOkaun}
+            onSetValue={g.setOkaunValue}
+          />
+        </CharacterDetail>
       </CardOverlay>
 
       <CardOverlay visible={overlay === 'z'} onClose={() => setOverlay(null)}>
-        <View style={styles.zPanel}>
-          <Text style={styles.overlayTitle}>Z</Text>
+        <CharacterDetail
+          title="Z"
+          artSize={ART_BIG}
+          art={<ZndrspltArt size={ART_BIG} present={board.zndrsplt} />}
+          onRemove={() => {
+            g.toggleBoard('zndrsplt');
+            setOverlay(null);
+          }}
+        >
           <Text style={styles.zNumber}>{game.pendingDraws}</Text>
           <Text style={styles.line}>cartes à piocher</Text>
           <SmallButton
@@ -271,7 +288,7 @@ const CoinFlipApp = () => {
               setOverlay(null);
             }}
           />
-        </View>
+        </CharacterDetail>
       </CardOverlay>
     </View>
   );

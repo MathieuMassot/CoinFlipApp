@@ -56,7 +56,6 @@ const OkaunPanel = ({ now, base, onAdjust, onSetValue }: Props) => {
 
   return (
     <View style={styles.panel}>
-      <Text style={styles.title}>Okaun</Text>
       <Text style={styles.big}>
         {now.power}/{now.toughness}
       </Text>

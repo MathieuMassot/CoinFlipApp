@@ -29,8 +29,8 @@ const CardOverlay = ({ visible, onClose, children }: Props) => {
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
-          {/* capte les appuis : toucher la carte ne la ferme pas */}
+        <Animated.View style={[styles.content, { transform: [{ scale }] }]}>
+          {/* capte les appuis : toucher le contenu ne le ferme pas */}
           <View onStartShouldSetResponder={() => true}>{children}</View>
         </Animated.View>
       </Pressable>
@@ -41,18 +41,11 @@ const CardOverlay = ({ visible, onClose, children }: Props) => {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: 'rgba(0,0,0,0.72)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  card: {
-    width: '88%',
-    backgroundColor: '#2c3e50',
-    borderColor: '#f1c40f',
-    borderWidth: 2,
-    borderRadius: 18,
-    padding: 18,
-  },
+  content: { width: '88%' },
 });
 
 export default CardOverlay;
