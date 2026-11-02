@@ -183,7 +183,7 @@ const CoinFlipApp = () => {
             onOpen={() => setOverlay('okaun')}
             onLaunch={() => launch(g.launchOkaun)}
             badge={
-              <Text style={styles.big}>
+              <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
                 {okaunShown.power}/{okaunShown.toughness}
               </Text>
             }
