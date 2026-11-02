@@ -2,6 +2,7 @@ import React, { ReactNode, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import OkaunArt from './characters/OkaunArt';
 import ZndrspltArt from './characters/ZndrspltArt';
+import YusriArt from './characters/YusriArt';
 import SmallButton from './SmallButton';
 import { GameState, emptyStats } from '../game';
 import { GameRecord, averageStats, endGame, totalStats } from '../records';
@@ -142,7 +143,7 @@ const StatsPage = ({
         <Text style={styles.hint}>réussites / échecs</Text>
       </StatCard>
 
-      <StatCard side="right" art={<Placeholder label="Yusri" />}>
+      <StatCard side="right" art={<YusriArt size={ART} present />}>
         <Line label="Automutilation de Yusri">{fmtBig(s.lifeLost)} PV</Line>
         <Line label="Pioche de Yusri">{cards(s.cardsYusri)}</Line>
       </StatCard>

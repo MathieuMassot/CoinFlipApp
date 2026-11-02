@@ -14,7 +14,6 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import BoardCard from './components/BoardCard';
 import CardOverlay from './components/CardOverlay';
 import LastFlips from './components/LastFlips';
 import OkaunPanel from './components/OkaunPanel';
@@ -30,10 +29,11 @@ import { useReveal } from './useReveal';
 import CharacterSlot from './components/CharacterSlot';
 import OkaunArt from './components/characters/OkaunArt';
 import ZndrspltArt from './components/characters/ZndrspltArt';
+import YusriArt, { YusriEtat } from './components/characters/YusriArt';
 import CharacterDetail from './components/CharacterDetail';
 import NumberPad from './components/NumberPad';
 
-type Overlay = 'z' | 'okaun' | null;
+type Overlay = 'z' | 'okaun' | 'yusri' | null;
 
 const ART = 124; // taille d'affichage des personnages
 const ART_BIG = 230; // taille dans le détail
@@ -76,6 +76,12 @@ const CoinFlipApp = () => {
     paddingRight: insets.right,
   };
 
+    const [yusri, setYusri] = useState<{ etat: YusriEtat; declencheur: number }>({
+    etat: 'repos',
+    declencheur: 0,
+  });
+  const [streak, setStreak] = useState({ wins: 0, losses: 0 });
+
   if (!g.loaded) {
     return (
       <View style={[styles.center, safeStyle]}>
@@ -99,7 +105,10 @@ const CoinFlipApp = () => {
       : game.okaunNow;
 
   // Lance une série puis la dévoile lancer par lancer
-  const launch = (run: () => Flip[]) => {
+  const launch = (
+    run: () => Flip[],
+    react?: (flip: Flip, index: number, flips: Flip[]) => void,
+  ) => {
     const before = game.okaunNow;
     const flips = run();
     if (flips.length > 0) {
@@ -110,9 +119,32 @@ const CoinFlipApp = () => {
           if (flips[i].result === 'Lose') {
             loseHaptic();
           }
+          react?.(flips[i], i, flips);
         },
       );
     }
+  };
+
+  // Yusri réagit à chaque lancer dévoilé ; 5 identiques déclenchent l'état « total »
+  const reactYusri = (flip: Flip, index: number, flips: Flip[]) => {
+    const win = flip.result === 'Win';
+    setStreak(s =>
+      win
+        ? { wins: Math.min(5, s.wins + 1), losses: 0 }
+        : { wins: 0, losses: Math.min(5, s.losses + 1) },
+    );
+    const total =
+      index === flips.length - 1 &&
+      flips.length === 5 &&
+      flips.every(f => f.result === flip.result);
+    const etat: YusriEtat = total
+      ? win
+        ? 'victoire-totale'
+        : 'defaite-totale'
+      : win
+        ? 'victoire'
+        : 'defaite';
+    setYusri(y => ({ etat, declencheur: y.declencheur + 1 }));
   };
 
   const dots = page === 0 ? '● ○' : '○ ●';
@@ -136,16 +168,28 @@ const CoinFlipApp = () => {
       <View style={styles.triangle}>
         <View style={styles.yusriRow}>
           <View style={styles.yusriSide} />
-          <BoardCard
-            title="Yusri"
-            active={board.yusri}
+          <CharacterSlot
+            size={ART}
+            present={board.yusri}
             onPlace={() => g.toggleBoard('yusri')}
             onRemove={() => g.toggleBoard('yusri')}
-            onLaunch={() => launch(() => g.launchYusri(yusriCount))}
+            onOpen={() => setOverlay('yusri')}
+            onLaunch={() =>
+              launch(() => g.launchYusri(yusriCount), reactYusri)
+            }
+            badge={<Text style={styles.big}>×{yusriCount}</Text>}
           >
-            <Text style={styles.big}>×{yusriCount}</Text>
-            <Text style={styles.hintSmall}>double appui = lancer</Text>
-          </BoardCard>
+            <YusriArt
+              size={ART}
+              present={board.yusri}
+              etat={yusri.etat}
+              declencheur={yusri.declencheur}
+              nombrePieces={yusriCount}
+              victoiresConsecutives={streak.wins}
+              echecsConsecutifs={streak.losses}
+              onAnimationFin={() => setYusri(y => ({ ...y, etat: 'repos' }))}
+            />
+          </CharacterSlot>
           <View style={styles.yusriSide}>
             <SlotReel
               value={yusriCount}
@@ -266,6 +310,28 @@ const CoinFlipApp = () => {
           </>
         )}
       </ScrollView>
+
+      <CardOverlay visible={overlay === 'yusri'} onClose={() => setOverlay(null)}>
+        <CharacterDetail
+          title="Yusri"
+          artSize={ART_BIG}
+          art={
+            <YusriArt
+              size={ART_BIG}
+              present={board.yusri}
+              nombrePieces={yusriCount}
+            />
+          }
+        >
+          <Text style={styles.line}>
+            Automutilation : {game.stats.lifeLost} PV
+          </Text>
+          <Text style={styles.line}>
+            Pioche : {game.stats.cardsYusri} carte
+            {game.stats.cardsYusri >= 2 ? 's' : ''}
+          </Text>
+        </CharacterDetail>
+      </CardOverlay>
 
       <CardOverlay visible={overlay === 'okaun'} onClose={() => setOverlay(null)}>
         <CharacterDetail
