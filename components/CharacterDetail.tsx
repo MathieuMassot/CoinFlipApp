@@ -13,6 +13,7 @@ type Props = {
 
 const CharacterDetail = ({ title, art, artSize, children }: Props) => {
   const landscape = useLandscape();
+  const topPadding = landscape ? 14 : OVERLAP + 8;
 
   return (
     <View style={[styles.wrapper, landscape && styles.wrapperL]}>
@@ -41,7 +42,7 @@ const CharacterDetail = ({ title, art, artSize, children }: Props) => {
         style={[
           styles.panel,
           landscape && styles.panelL,
-          { paddingTop: landscape ? 14 : OVERLAP + 8 },
+          { paddingTop: topPadding },
         ]}
       >
         <Text style={styles.title}>{title}</Text>

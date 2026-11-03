@@ -17,11 +17,10 @@ import {
 } from 'react-native-safe-area-context';
 import CardOverlay from './components/CardOverlay';
 import CharacterDetail from './components/CharacterDetail';
-import CharacterSlot from './components/CharacterSlot';
+import YusriDrag from './components/YusriDrag';
 import LastFlips from './components/LastFlips';
 import NumberPad from './components/NumberPad';
 import OkaunPanel from './components/OkaunPanel';
-import SlotReel from './components/SlotReel';
 import SmallButton from './components/SmallButton';
 import StatsPage from './components/StatsPage';
 import OkaunArt from './components/characters/OkaunArt';
@@ -35,10 +34,11 @@ import {
   doublingsFromFlip,
   okaunProgression,
 } from './game';
-import { loseHaptic } from './haptics';
+import { loseHaptic, stepHaptic } from './haptics';
 import { useGame } from './useGame';
 import { useReveal } from './useReveal';
 import { useSounds } from './useSounds';
+import CharacterSlot from './components/CharacterSlot';
 
 type Overlay = 'z' | 'okaun' | 'yusri' | null;
 
@@ -49,11 +49,15 @@ const ART_BIG_L = 300; // taille dans le détail, en paysage
 const THUMB = 84; // taille du Pouce en portrait
 const THUMB_L = 72; // taille du Pouce en paysage
 
+// Sensibilité du glissement de Yusri : part de sa taille nécessaire pour une pièce
+// (plus petit = plus sensible ; 0.15 très sensible, 0.21 normal, 0.30 plus lent)
+const COIN_STEP = 0.30;
+
 const CoinFlipApp = () => {
   useKeepAwake();
   const insets = useSafeAreaInsets();
-  const win = useWindowDimensions();
-  const landscape = win.width > win.height;
+  const screen = useWindowDimensions();
+  const landscape = screen.width > screen.height;
   const art = landscape ? ART_L : ART;
   const thumbPx = landscape ? THUMB_L : THUMB;
   const artBig = landscape ? ART_BIG_L : ART_BIG;
@@ -66,7 +70,7 @@ const CoinFlipApp = () => {
   const g = useGame({ onBeforeChange: skip, onEvents: queueEvents });
 
   const pagerRef = useRef<React.ElementRef<typeof ScrollView>>(null);
-  const [yusriCount, setYusriCount] = useState(5);
+  const [yusriCount, setYusriCount] = useState(1);
   const [countText, setCountText] = useState('1');
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [page, setPage] = useState(0);
@@ -203,6 +207,14 @@ const CoinFlipApp = () => {
     }
   };
 
+  // Change le nombre de pièces de Yusri (de 1 à 5), avec une petite vibration
+  const changeCoins = (n: number) => {
+    if (n >= 1 && n <= 5 && n !== yusriCount) {
+      stepHaptic();
+      setYusriCount(n);
+    }
+  };
+
   // Yusri réagit à chaque lancer dévoilé ; 5 identiques déclenchent l'état « total »
   const reactYusri = (flip: Flip, index: number, flips: Flip[]) => {
     const win = flip.result === 'Win';
@@ -250,33 +262,34 @@ const CoinFlipApp = () => {
       <View style={styles.space3} />
 
       <View style={styles.yusriRow}>
-        <View style={styles.yusriSide} />
-        <CharacterSlot
-          size={art}
-          present={board.yusri}
-          onPlace={() => g.toggleBoard('yusri')}
-          onRemove={() => g.toggleBoard('yusri')}
-          onOpen={() => setOverlay('yusri')}
-          onLaunch={() => launch(() => g.launchYusri(yusriCount), reactYusri)}
+        <YusriDrag
+          count={yusriCount}
+          onChange={setYusriCount}
+          enabled={board.yusri}
+          step={art * COIN_STEP}
         >
-          <YusriArt
+          <CharacterSlot
             size={art}
             present={board.yusri}
-            etat={yusri.etat}
-            declencheur={yusri.declencheur}
-            nombrePieces={yusriCount}
-            victoiresConsecutives={streak.wins}
-            echecsConsecutifs={streak.losses}
-            onAnimationFin={() => setYusri(y => ({ ...y, etat: 'repos' }))}
-          />
-        </CharacterSlot>
-        <View style={styles.yusriSide}>
-          <SlotReel
-            value={yusriCount}
-            onChange={setYusriCount}
-            enabled={board.yusri}
-          />
-        </View>
+            onPlace={() => g.toggleBoard('yusri')}
+            onRemove={() => g.toggleBoard('yusri')}
+            onOpen={() => setOverlay('yusri')}
+            onLaunch={() =>
+              launch(() => g.launchYusri(yusriCount), reactYusri)
+            }
+          >
+            <YusriArt
+              size={art}
+              present={board.yusri}
+              etat={yusri.etat}
+              declencheur={yusri.declencheur}
+              nombrePieces={yusriCount}
+              victoiresConsecutives={streak.wins}
+              echecsConsecutifs={streak.losses}
+              onAnimationFin={() => setYusri(y => ({ ...y, etat: 'repos' }))}
+            />
+          </CharacterSlot>
+        </YusriDrag>
       </View>
 
       <View style={styles.space2} />
@@ -452,13 +465,35 @@ const CoinFlipApp = () => {
           title="Yusri"
           artSize={artBig}
           art={
-            <YusriArt
-              size={artBig}
-              present={board.yusri}
-              nombrePieces={yusriCount}
-            />
+            <YusriDrag
+              count={yusriCount}
+              onChange={setYusriCount}
+              enabled={board.yusri}
+              step={artBig * COIN_STEP}
+            >
+              <YusriArt
+                size={artBig}
+                present={board.yusri}
+                nombrePieces={yusriCount}
+              />
+            </YusriDrag>
           }
         >
+          {/* Réglage précis des pièces (le glissement sur Yusri marche aussi) */}
+          <View style={styles.coinsRow}>
+            <Text style={styles.line}>Pièces</Text>
+            <SmallButton
+              title="−"
+              onPress={() => changeCoins(yusriCount - 1)}
+              disabled={yusriCount <= 1}
+            />
+            <Text style={styles.coinsCount}>{yusriCount}</Text>
+            <SmallButton
+              title="+"
+              onPress={() => changeCoins(yusriCount + 1)}
+              disabled={yusriCount >= 5}
+            />
+          </View>
           <Text style={styles.line}>
             Automutilation : {game.stats.lifeLost} PV
           </Text>
@@ -567,7 +602,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  yusriSide: { width: 60, alignItems: 'center' },
   triangleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -609,7 +643,15 @@ const styles = StyleSheet.create({
   dots: { color: '#7f8c8d', textAlign: 'center', fontSize: 12 },
   zNumber: { color: '#ffffff', fontSize: 56, fontWeight: 'bold' },
   line: { color: '#bdc3c7', fontSize: 15 },
-    pageStatsL: { flex: 1, padding: 4 },
+  pageStatsL: { flex: 1, padding: 4 },
+  coinsRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  coinsCount: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    minWidth: 20,
+    textAlign: 'center',
+  },
 });
 
 const App = () => (

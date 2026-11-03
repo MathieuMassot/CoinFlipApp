@@ -317,6 +317,14 @@ const YusriArt = ({
   const eyeX = useSharedValue(0);
   const eyeY = useSharedValue(0);
   const orbitAngle = useSharedValue(0);
+    // Nombre de pièces animé : les pièces apparaissent et disparaissent en douceur
+  const nombreAnim = useSharedValue(nombrePieces);
+
+    useEffect(() => {
+    nombreAnim.value = withTiming(Math.min(5, Math.max(1, nombrePieces)), {
+      duration: 320,
+    });
+  }, [nombrePieces, nombreAnim]);
 
   const finRef = useRef(onAnimationFin);
   finRef.current = onAnimationFin;
@@ -500,7 +508,7 @@ const YusriArt = ({
   const orbite = (couche: 'arriere' | 'avant') => (
     <OrbiteDePieces
       couche={couche}
-      nombre={nombrePieces}
+      nombre={nombreAnim}
       size={size}
       angle={orbitAngle}
       elargissement={v.orbitWiden}

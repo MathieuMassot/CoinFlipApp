@@ -7,3 +7,8 @@ const DELAY_MS = 110; // attente pour que la tuile soit visible avant
 export const loseHaptic = () => {
   setTimeout(() => Vibration.vibrate(LOSE_MS), DELAY_MS);
 };
+const STEP_MS = 30; // vibration à chaque pièce de Yusri ajoutée ou retirée
+
+export const stepHaptic = () => {
+  Vibration.vibrate(STEP_MS);
+};
