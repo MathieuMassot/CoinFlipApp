@@ -45,6 +45,7 @@ type Overlay = 'z' | 'okaun' | 'yusri' | null;
 const ART = 124; // taille des personnages en portrait
 const ART_L = 108; // taille des personnages en paysage
 const ART_BIG = 230; // taille dans le détail
+const ART_BIG_L = 300; // taille dans le détail, en paysage
 const THUMB = 84; // taille du Pouce en portrait
 const THUMB_L = 72; // taille du Pouce en paysage
 
@@ -55,7 +56,7 @@ const CoinFlipApp = () => {
   const landscape = win.width > win.height;
   const art = landscape ? ART_L : ART;
   const thumbPx = landscape ? THUMB_L : THUMB;
-
+  const artBig = landscape ? ART_BIG_L : ART_BIG;
   const { reveal, start, skip } = useReveal();
   const sounds = useSounds();
   const pendingEvents = useRef<GameEvent[]>([]);
@@ -449,10 +450,10 @@ const CoinFlipApp = () => {
       >
         <CharacterDetail
           title="Yusri"
-          artSize={ART_BIG}
+          artSize={artBig}
           art={
             <YusriArt
-              size={ART_BIG}
+              size={artBig}
               present={board.yusri}
               nombrePieces={yusriCount}
             />
@@ -475,7 +476,7 @@ const CoinFlipApp = () => {
         <CharacterDetail
           title="Okaun"
           artSize={ART_BIG}
-          art={<OkaunArt size={ART_BIG} present={board.okaun} />}
+          art={<OkaunArt size={artBig} present={board.okaun} />}
         >
           <OkaunPanel
             now={game.okaunNow}
@@ -490,7 +491,7 @@ const CoinFlipApp = () => {
         <CharacterDetail
           title="Zndrsplt"
           artSize={ART_BIG}
-          art={<ZndrspltArt size={ART_BIG} present={board.zndrsplt} />}
+          art={<ZndrspltArt size={artBig} present={board.zndrsplt} />}
         >
           <Text style={styles.zNumber}>{shownDraws}</Text>
           <Text style={styles.line}>cartes à piocher</Text>
@@ -603,6 +604,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     padding: 16,
     alignItems: 'center',
+    alignSelf: 'center',
   },
   dots: { color: '#7f8c8d', textAlign: 'center', fontSize: 12 },
   zNumber: { color: '#ffffff', fontSize: 56, fontWeight: 'bold' },

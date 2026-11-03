@@ -1,5 +1,6 @@
 import React, { ReactNode, useEffect, useRef } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useLandscape } from '../useLandscape';
 
 type Props = {
   visible: boolean;
@@ -9,6 +10,7 @@ type Props = {
 
 const CardOverlay = ({ visible, onClose, children }: Props) => {
   const scale = useRef(new Animated.Value(0.6)).current;
+  const landscape = useLandscape();
 
   useEffect(() => {
     if (visible) {
@@ -29,7 +31,13 @@ const CardOverlay = ({ visible, onClose, children }: Props) => {
       onRequestClose={onClose}
     >
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Animated.View style={[styles.content, { transform: [{ scale }] }]}>
+        <Animated.View
+          style={[
+            styles.content,
+            landscape && styles.contentL,
+            { transform: [{ scale }] },
+          ]}
+        >
           {/* capte les appuis : toucher le contenu ne le ferme pas */}
           <View onStartShouldSetResponder={() => true}>{children}</View>
         </Animated.View>
@@ -46,6 +54,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: { width: '88%' },
+  contentL: { width: '80%' },
 });
 
 export default CardOverlay;

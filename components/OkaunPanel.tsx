@@ -9,6 +9,7 @@ import {
 import NumberPad from './NumberPad';
 import SmallButton from './SmallButton';
 import { Stats } from '../game';
+import { useLandscape } from '../useLandscape';
 
 type StatRowProps = {
   label: string;
@@ -40,9 +41,13 @@ type Props = {
 type Editing = 'power' | 'toughness' | null;
 
 const OkaunPanel = ({ now, base, onAdjust, onSetValue }: Props) => {
+  const landscape = useLandscape();
   const [permanent, setPermanent] = useState(true);
   const [editing, setEditing] = useState<Editing>(null);
   const shown = permanent ? base : now;
+
+  // En paysage, la hauteur manque : pendant la saisie, le pavé prend toute la place
+  const compactEdit = landscape && editing !== null;
 
   const submit = (v: number) => {
     onSetValue(
@@ -56,29 +61,33 @@ const OkaunPanel = ({ now, base, onAdjust, onSetValue }: Props) => {
 
   return (
     <View style={styles.panel}>
-      <View style={styles.valueRow}>
-        <Text style={styles.big}>
-          {now.power}/{now.toughness}
-        </Text>
-        <Text style={styles.sub}>
-          base {base.power}/{base.toughness}
-        </Text>
-      </View>
+      {!compactEdit && (
+        <>
+          <View style={styles.valueRow}>
+            <Text style={styles.big}>
+              {now.power}/{now.toughness}
+            </Text>
+            <Text style={styles.sub}>
+              base {base.power}/{base.toughness}
+            </Text>
+          </View>
 
-      {/* À gauche : permanent (artefact). À droite : ce tour seulement. */}
-      <View style={styles.modeRow}>
-        <Text style={[styles.mode, permanent && styles.modeOn]}>
-          Permanent
-        </Text>
-        <Switch
-          value={!permanent}
-          onValueChange={v => setPermanent(!v)}
-          disabled={editing !== null}
-        />
-        <Text style={[styles.mode, !permanent && styles.modeOn]}>
-          Ce tour seulement
-        </Text>
-      </View>
+          {/* À gauche : permanent (artefact). À droite : ce tour seulement. */}
+          <View style={styles.modeRow}>
+            <Text style={[styles.mode, permanent && styles.modeOn]}>
+              Permanent
+            </Text>
+            <Switch
+              value={!permanent}
+              onValueChange={v => setPermanent(!v)}
+              disabled={editing !== null}
+            />
+            <Text style={[styles.mode, !permanent && styles.modeOn]}>
+              Ce tour seulement
+            </Text>
+          </View>
+        </>
+      )}
 
       {editing ? (
         <NumberPad

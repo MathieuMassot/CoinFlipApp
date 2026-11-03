@@ -1,14 +1,17 @@
 import React, { ReactNode, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import OkaunArt from './characters/OkaunArt';
-import ZndrspltArt from './characters/ZndrspltArt';
-import YusriArt from './characters/YusriArt';
 import PouceDeKrark from './characters/PouceDeKrark';
+import YusriArt from './characters/YusriArt';
+import ZndrspltArt from './characters/ZndrspltArt';
 import SmallButton from './SmallButton';
 import { GameState, emptyStats } from '../game';
 import { GameRecord, averageStats, endGame, totalStats } from '../records';
+import { useLandscape } from '../useLandscape';
 
-const ART = 100;
+const ART = 100; // taille des personnages en portrait
+const ART_L = 84; // en paysage (la hauteur manque)
+const SIDE_PAD = 14;
 
 type Tab = 'game' | 'total' | 'average';
 
@@ -23,6 +26,7 @@ type Props = {
 // Les moyennes ont une décimale, les totaux sont entiers
 const fmt = (n: number) =>
   Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', ',');
+
 // Grands nombres : raccourcis pour tenir sur une seule ligne
 // (la force d'Okaun double à chaque réussite et peut devenir énorme)
 const fmtBig = (n: number): string => {
@@ -47,21 +51,40 @@ const cards = (n: number) => `${fmtBig(n)} carte${n >= 2 ? 's' : ''}`;
 
 type CardProps = {
   side: 'left' | 'right';
+  artSize: number;
+  landscape: boolean;
   art: ReactNode;
   children: ReactNode;
 };
 
 // Le personnage déborde sur le cadre, côté gauche ou droit
-const StatCard = ({ side, art, children }: CardProps) => (
-  <View
-    style={[styles.card, side === 'left' ? styles.padLeft : styles.padRight]}
-  >
-    <View style={[styles.art, side === 'left' ? styles.artLeft : styles.artRight]}>
-      {art}
+const StatCard = ({ side, artSize, landscape, art, children }: CardProps) => {
+  const artPad = artSize - 8;
+  const padLeft = side === 'left' ? artPad : SIDE_PAD;
+  const padRight = side === 'left' ? SIDE_PAD : artPad;
+
+  return (
+    <View
+      style={[
+        styles.card,
+        landscape && styles.cardL,
+        { paddingLeft: padLeft, paddingRight: padRight },
+      ]}
+    >
+      <View
+        style={[
+          styles.art,
+          landscape && styles.artL,
+          side === 'left' ? styles.artLeft : styles.artRight,
+          { width: artSize, height: artSize },
+        ]}
+      >
+        {art}
+      </View>
+      {children}
     </View>
-    {children}
-  </View>
-);
+  );
+};
 
 const Line = ({ label, children }: { label: string; children: ReactNode }) => (
   <View style={styles.line}>
@@ -81,6 +104,8 @@ const StatsPage = ({
   onFinishGame,
   onResetRecords,
 }: Props) => {
+  const landscape = useLandscape();
+  const artSize = landscape ? ART_L : ART;
   const [tab, setTab] = useState<Tab>('game');
 
   // La partie en cours compte dans le total et la moyenne
@@ -99,7 +124,9 @@ const StatsPage = ({
     ]);
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView
+      contentContainerStyle={[styles.content, landscape && styles.contentL]}
+    >
       <View style={styles.tabs}>
         <SmallButton
           title="Partie"
@@ -125,32 +152,55 @@ const StatsPage = ({
         {tab === 'average' && 'Moyenne par partie'}
       </Text>
 
-      <StatCard side="left" art={<PouceDeKrark size={ART} present />}>
-        <Line label="Sans Pouce">
-          <Text style={styles.win}>{fmtBig(s.wins.withoutThumb)}</Text> /{' '}
-          <Text style={styles.lose}>{fmtBig(s.losses.withoutThumb)}</Text>
-        </Line>
-        <Line label="Avec Pouce">
-          <Text style={styles.win}>{fmt(s.wins.withThumb)}</Text> /{' '}
-          <Text style={styles.lose}>{fmt(s.losses.withThumb)}</Text>
-        </Line>
-        <Line label="Sauvetages du Pouce">{fmtBig(s.thumbSaves)}</Line>
-      </StatCard>
+      {/* Portrait : les quatre encadrés l'un sous l'autre. Paysage : grille 2 × 2. */}
+      <View style={landscape ? styles.gridL : undefined}>
+        <StatCard
+          side="left"
+          artSize={artSize}
+          landscape={landscape}
+          art={<PouceDeKrark size={artSize} present />}
+        >
+          <Line label="Sans Pouce">
+            <Text style={styles.win}>{fmtBig(s.wins.withoutThumb)}</Text> /{' '}
+            <Text style={styles.lose}>{fmtBig(s.losses.withoutThumb)}</Text>
+          </Line>
+          <Line label="Avec Pouce">
+            <Text style={styles.win}>{fmtBig(s.wins.withThumb)}</Text> /{' '}
+            <Text style={styles.lose}>{fmtBig(s.losses.withThumb)}</Text>
+          </Line>
+          <Line label="Sauvetages du Pouce">{fmtBig(s.thumbSaves)}</Line>
+        </StatCard>
 
-      <StatCard side="right" art={<YusriArt size={ART} present />}>
-        <Line label="Automutilation de Yusri">{fmtBig(s.lifeLost)} PV</Line>
-        <Line label="Pioche de Yusri">{cards(s.cardsYusri)}</Line>
-      </StatCard>
+        <StatCard
+          side="right"
+          artSize={artSize}
+          landscape={landscape}
+          art={<YusriArt size={artSize} present />}
+        >
+          <Line label="Automutilation de Yusri">{fmtBig(s.lifeLost)} PV</Line>
+          <Line label="Pioche de Yusri">{cards(s.cardsYusri)}</Line>
+        </StatCard>
 
-      <StatCard side="left" art={<ZndrspltArt size={ART} present />}>
-        <Line label="Sagesse de Zndrsplt">{cards(s.cardsZndrsplt)}</Line>
-      </StatCard>
+        <StatCard
+          side="left"
+          artSize={artSize}
+          landscape={landscape}
+          art={<ZndrspltArt size={artSize} present />}
+        >
+          <Line label="Sagesse de Zndrsplt">{cards(s.cardsZndrsplt)}</Line>
+        </StatCard>
 
-      <StatCard side="right" art={<OkaunArt size={ART} present />}>
-        <Line label="Chaos d'Okaun">{fmtBig(s.okaunMax.power)}</Line>
-      </StatCard>
+        <StatCard
+          side="right"
+          artSize={artSize}
+          landscape={landscape}
+          art={<OkaunArt size={artSize} present />}
+        >
+          <Line label="Chaos d'Okaun">{fmtBig(s.okaunMax.power)}</Line>
+        </StatCard>
+      </View>
 
-      <View style={styles.actions}>
+      <View style={[styles.actions, landscape && styles.actionsL]}>
         <SmallButton
           title="Nouvelle partie"
           onPress={() =>
@@ -188,12 +238,19 @@ const StatsPage = ({
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 6 },
+  contentL: { paddingVertical: 8, paddingHorizontal: 12 },
   tabs: { flexDirection: 'row', justifyContent: 'center', gap: 8 },
   subtitle: {
     color: '#ecf0f1',
     fontSize: 15,
     fontWeight: 'bold',
     marginTop: 6,
+    textAlign: 'center',
+  },
+  gridL: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   card: {
     backgroundColor: '#1f1f30',
@@ -206,29 +263,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
   },
-  padLeft: { paddingLeft: ART - 8, paddingRight: 14 },
-  padRight: { paddingLeft: 14, paddingRight: ART - 8 },
+  cardL: { width: '48.5%', minHeight: 72, marginTop: 20 },
   art: {
     position: 'absolute',
     top: -26,
-    width: ART,
-    height: ART,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  artL: { top: -20 },
   artLeft: { left: -8 },
   artRight: { right: -8 },
-  placeholder: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#5d6d7e',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholderText: { color: '#7f8c8d', fontSize: 12 },
   line: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -245,6 +289,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 22,
   },
+  actionsL: { marginTop: 14 },
 });
 
 export default StatsPage;
