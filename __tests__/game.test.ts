@@ -84,11 +84,22 @@ describe('Okaun', () => {
 });
 
 describe('Zndrsplt', () => {
-  it('1 carte par réussite, seulement les miennes', () => {
+  it('1 carte par réussite, de n’importe quel joueur', () => {
     let s = play(setBoard(newGame(), { zndrsplt: true }), [win, win, lose, win]);
     s = play(s, [win], 'manual', 'opponent');
-    expect(s.pendingDraws).toBe(3);
-    expect(s.stats.cardsZndrsplt).toBe(3);
+    expect(s.pendingDraws).toBe(4);
+    expect(s.stats.cardsZndrsplt).toBe(4);
+  });
+
+  it('une réussite adverse fait piocher, sans toucher à mes statistiques', () => {
+    const s = play(setBoard(newGame(), { zndrsplt: true }), [win], 'manual', 'opponent');
+    expect(s.pendingDraws).toBe(1);
+    expect(s.stats.wins.withoutThumb).toBe(0);
+  });
+
+  it('sans le Z, un adversaire qui gagne ne fait rien piocher', () => {
+    const s = play(newGame(), [win], 'manual', 'opponent');
+    expect(s.pendingDraws).toBe(0);
   });
 
   it('le compteur repart de zéro, pas la statistique', () => {

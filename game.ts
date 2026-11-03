@@ -183,11 +183,10 @@ const recordFlip = (
     };
   }
 
-  // Statistiques et cartes : seulement mes lancers
+  // Statistiques : seulement mes lancers
   if (player === 'me') {
     const thumbKey = flip.coins.length > 1 ? 'withThumb' : 'withoutThumb';
     const stats = { ...next.stats };
-    let draws = 0;
 
     if (won) {
       stats.wins = { ...stats.wins, [thumbKey]: stats.wins[thumbKey] + 1 };
@@ -195,11 +194,7 @@ const recordFlip = (
         stats.thumbSaves += 1; // le Pouce a sauvé ce lancer
       }
       if (source === 'yusri') {
-        stats.cardsYusri += 1;
-      }
-      if (board.zndrsplt) {
-        stats.cardsZndrsplt += 1;
-        draws += 1;
+        stats.cardsYusri += 1; // statistique de Yusri, pas de carte « à piocher »
       }
     } else {
       stats.losses = { ...stats.losses, [thumbKey]: stats.losses[thumbKey] + 1 };
@@ -208,7 +203,17 @@ const recordFlip = (
       }
     }
 
-    next = { ...next, stats, pendingDraws: next.pendingDraws + draws };
+    next = { ...next, stats };
+  }
+
+  // Zndrsplt : « chaque fois qu'un joueur gagne un lancer, pioche une carte » :
+  // les réussites des adversaires comptent aussi
+  if (won && board.zndrsplt) {
+    next = {
+      ...next,
+      pendingDraws: next.pendingDraws + 1,
+      stats: { ...next.stats, cardsZndrsplt: next.stats.cardsZndrsplt + 1 },
+    };
   }
 
   return next;
@@ -321,9 +326,10 @@ export const okaunProgression = (start: Stats, flips: Flip[]): Stats[] => {
   return steps;
 };
 
-// Cartes à piocher produites par un lancer enregistré : seulement celles de Zndrsplt
+// Cartes à piocher produites par un lancer enregistré : celles de Zndrsplt,
+// qui pioche à chaque réussite de n'importe quel joueur
 export const cardsFromFlip = (f: RecordedFlip): number =>
-  f.player === 'me' && f.result === 'Win' && f.board.zndrsplt ? 1 : 0;
+  f.result === 'Win' && f.board.zndrsplt ? 1 : 0;
 
 // Doublements d'Okaun produits par un lancer enregistré
 export const doublingsFromFlip = (f: RecordedFlip): number =>
