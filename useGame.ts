@@ -14,11 +14,16 @@ import {
   recordFlipsWithEvents,
   setBoard,
   setMyTurn as applyMyTurn,
+  LaunchCard,
+  allowRelaunch as applyAllowRelaunch,
+  canLaunch as canLaunchState,
 } from './game';
 import { History, canUndo, commit, newHistory, undo } from './history';
 import { GameRecord, endGame } from './records';
 import { SAVE_VERSION } from './saved';
 import { loadSaved, writeSaved } from './storage';
+
+
 
 type Options = {
   onEvents?: (events: GameEvent[]) => void;
@@ -199,6 +204,18 @@ export const useGame = ({ onEvents, onBeforeChange }: Options = {}) => {
 
   const resetRecords = useCallback(() => setRecords([]), []);
 
+    // Le personnage peut-il encore lancer ce tour-ci ? (lit toujours l'état le plus récent)
+  const canLaunch = useCallback(
+    (card: LaunchCard) => canLaunchState(stateRef.current, card),
+    [],
+  );
+
+  // Combat supplémentaire : autorise un nouveau lancer du personnage
+  const allowRelaunch = useCallback(
+    (card: LaunchCard) => apply(applyAllowRelaunch(stateRef.current, card)),
+    [apply],
+  );
+
   return {
     loaded,
     game: history.present,
@@ -220,5 +237,7 @@ export const useGame = ({ onEvents, onBeforeChange }: Options = {}) => {
     startNewGame,
     finishGame,
     resetRecords,
+    canLaunch,
+    allowRelaunch,
   };
 };

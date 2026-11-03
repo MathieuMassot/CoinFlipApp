@@ -12,3 +12,9 @@ const STEP_MS = 30; // vibration à chaque pièce de Yusri ajoutée ou retirée
 export const stepHaptic = () => {
   Vibration.vibrate(STEP_MS);
 };
+
+const BLOCKED_MS = 450; // vibration longue : ce personnage a déjà lancé ce tour
+
+export const blockedHaptic = () => {
+  Vibration.vibrate(BLOCKED_MS);
+};

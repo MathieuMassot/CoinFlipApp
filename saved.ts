@@ -44,6 +44,14 @@ export const parseSaved = (raw: string | null): Saved => {
           ...data.game,
           lastSeries: data.game.lastSeries ?? [],
           stats: fixStats(data.game.stats),
+          turn: {
+            ...data.game.turn,
+            launched: data.game.turn.launched ?? {
+              yusri: false,
+              zndrsplt: false,
+              okaun: false,
+            },
+          },
         },
         records: data.records.map(
           (r: { stats: { thumbSaves?: number } }) => ({

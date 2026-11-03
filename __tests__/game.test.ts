@@ -16,6 +16,8 @@ import {
   adjustOkaun,
   cardsFromFlip,
   doublingsFromFlip,
+  canLaunch,
+  allowRelaunch,
 } from '../game';
 
 const win: Flip = { result: 'Win', coins: ['Win'] };
@@ -325,5 +327,43 @@ describe('Ce que produit chaque lancer', () => {
     s = play(s, [win], 'manual', 'opponent');
     const total = s.turn.flips.reduce((n, f) => n + doublingsFromFlip(f), 0);
     expect(total).toBe(s.turn.doublings);
+  });
+});
+
+describe('Un lancer par personnage et par tour', () => {
+  it('un lancer de personnage le marque comme ayant lancé', () => {
+    const s = play(newGame(), [win], 'yusri');
+    expect(canLaunch(s, 'yusri')).toBe(false);
+    expect(canLaunch(s, 'okaun')).toBe(true);
+    expect(canLaunch(s, 'zndrsplt')).toBe(true);
+  });
+
+  it('les lancers libres et ceux des adversaires ne comptent pas', () => {
+    let s = play(newGame(), [win, win]);
+    s = play(s, [win], 'manual', 'opponent');
+    expect(canLaunch(s, 'yusri')).toBe(true);
+    expect(canLaunch(s, 'okaun')).toBe(true);
+    expect(canLaunch(s, 'zndrsplt')).toBe(true);
+  });
+
+  it('la fin de tour libère tout le monde', () => {
+    let s = play(newGame(), [win], 'okaun');
+    s = endTurn(s);
+    expect(canLaunch(s, 'okaun')).toBe(true);
+  });
+
+  it('on peut autoriser un nouveau lancer (combat supplémentaire)', () => {
+    let s = play(newGame(), [win], 'zndrsplt');
+    s = allowRelaunch(s, 'zndrsplt');
+    expect(canLaunch(s, 'zndrsplt')).toBe(true);
+  });
+});
+
+describe('Fin de tour et cartes à piocher', () => {
+  it('les cartes à piocher ne passent pas au tour suivant, la stat reste', () => {
+    let s = play(setBoard(newGame(), { zndrsplt: true }), [win, win]);
+    s = endTurn(s);
+    expect(s.pendingDraws).toBe(0);
+    expect(s.stats.cardsZndrsplt).toBe(2);
   });
 });

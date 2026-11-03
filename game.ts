@@ -20,10 +20,14 @@ export type RecordedFlip = Flip & {
   board: Board; // état du terrain au moment du lancer
 };
 
+export type LaunchCard = 'yusri' | 'zndrsplt' | 'okaun';
+export type Launched = Record<LaunchCard, boolean>;
+
 export type Turn = {
   number: number;
-  mine: boolean; // est-ce mon tour ?
+  mine: boolean; // n'est plus utilisé par l'écran (plus d'interrupteur « Mon tour »)
   doublings: number; // doublements d'Okaun depuis le début de ce tour
+  launched: Launched; // quels personnages ont déjà lancé ce tour-ci
   flips: RecordedFlip[];
 };
 
@@ -53,6 +57,7 @@ const emptyTurn = (number: number, mine: boolean): Turn => ({
   number,
   mine,
   doublings: 0,
+ launched: { yusri: false, zndrsplt: false, okaun: false },
   flips: [],
 });
 
@@ -141,10 +146,12 @@ const startTurn = (state: GameState, mine: boolean): GameState =>
     {
       ...state,
       lastSeries: [],
+      pendingDraws: 0, // les cartes se piochent au fur et à mesure : rien ne passe au tour suivant
       turn: emptyTurn(state.turn.number + 1, mine),
     },
     state.okaunBase,
   );
+
 // Début (true) ou fin (false) de mon tour
 export const setMyTurn = (state: GameState, mine: boolean): GameState =>
   startTurn(state, mine);
@@ -228,7 +235,18 @@ export const recordFlips = (
     return state;
   }
   const next = flips.reduce((s, f) => recordFlip(s, f, context), state);
-  return { ...next, lastSeries: next.turn.flips.slice(-flips.length) };
+
+  // Yusri, Okaun et le Z ne lancent qu'une fois par tour
+  const launched = { ...next.turn.launched };
+  if (context.player === 'me' && context.source !== 'manual') {
+    launched[context.source] = true;
+  }
+
+  return {
+    ...next,
+    lastSeries: next.turn.flips.slice(-flips.length),
+    turn: { ...next.turn, launched },
+  };
 };
 
 // Ce qui vient de se passer, pour déclencher les sons (et plus tard les animations)
@@ -334,3 +352,19 @@ export const cardsFromFlip = (f: RecordedFlip): number =>
 // Doublements d'Okaun produits par un lancer enregistré
 export const doublingsFromFlip = (f: RecordedFlip): number =>
   f.result === 'Win' && f.board.okaun ? 1 : 0;
+
+// Ce personnage peut-il encore lancer ce tour-ci ?
+export const canLaunch = (state: GameState, card: LaunchCard): boolean =>
+  !state.turn.launched[card];
+
+// Combat supplémentaire : autorise un nouveau lancer du personnage
+export const allowRelaunch = (
+  state: GameState,
+  card: LaunchCard,
+): GameState => ({
+  ...state,
+  turn: {
+    ...state.turn,
+    launched: { ...state.turn.launched, [card]: false },
+  },
+});

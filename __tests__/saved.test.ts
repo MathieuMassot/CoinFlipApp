@@ -43,4 +43,14 @@ describe('saved', () => {
     delete raw.game.stats.thumbSaves;
     expect(parseSaved(JSON.stringify(raw)).game.stats.thumbSaves).toBe(0);
   });
+
+    it('accepte une ancienne sauvegarde sans suivi des lancers du tour', () => {
+    const raw = JSON.parse(serializeSaved(defaultSaved()));
+    delete raw.game.turn.launched;
+    expect(parseSaved(JSON.stringify(raw)).game.turn.launched).toEqual({
+      yusri: false,
+      zndrsplt: false,
+      okaun: false,
+    });
+  });
 });

@@ -14,33 +14,32 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import CartoonSwitch from './components/CartoonSwitch';
 import CardOverlay from './components/CardOverlay';
 import CharacterDetail from './components/CharacterDetail';
-import YusriDrag from './components/YusriDrag';
+import CharacterSlot from './components/CharacterSlot';
 import LastFlips from './components/LastFlips';
 import NumberPad from './components/NumberPad';
 import OkaunPanel from './components/OkaunPanel';
 import SmallButton from './components/SmallButton';
 import StatsPage from './components/StatsPage';
+import YusriDrag from './components/YusriDrag';
 import OkaunArt from './components/characters/OkaunArt';
 import PouceDeKrark, { PouceEtat } from './components/characters/PouceDeKrark';
+import Presence from './components/characters/Presence';
 import YusriArt, { YusriEtat } from './components/characters/YusriArt';
 import ZndrspltArt from './components/characters/ZndrspltArt';
 import { Flip } from './flip';
 import {
   GameEvent,
+  LaunchCard,
   cardsFromFlip,
-  doublingsFromFlip,
   okaunProgression,
 } from './game';
-import { loseHaptic } from './haptics';
+import { blockedHaptic, loseHaptic } from './haptics';
+import { SoundName, soundForEvents } from './sounds';
 import { useGame } from './useGame';
 import { useReveal } from './useReveal';
 import { useSounds } from './useSounds';
-import CharacterSlot from './components/CharacterSlot';
-import Presence from './components/characters/Presence';
-import { SoundName, soundForEvents } from './sounds';
 
 type Overlay = 'z' | 'okaun' | 'yusri' | null;
 
@@ -53,7 +52,7 @@ const THUMB_L = 72; // taille du Pouce en paysage
 
 // Sensibilité du glissement de Yusri : part de sa taille nécessaire pour une pièce
 // (plus petit = plus sensible ; 0.15 très sensible, 0.21 normal, 0.30 plus lent)
-const COIN_STEP = 0.30;
+const COIN_STEP = 0.3;
 // Dans le détail, Yusri est grand mais l'écran ne grandit pas : distance fixe par pièce
 const DETAIL_STEP = 38;
 
@@ -65,6 +64,7 @@ const CoinFlipApp = () => {
   const art = landscape ? ART_L : ART;
   const thumbPx = landscape ? THUMB_L : THUMB;
   const artBig = landscape ? ART_BIG_L : ART_BIG;
+
   const { reveal, start, skip } = useReveal();
   const sounds = useSounds();
   const pendingEvents = useRef<GameEvent[]>([]);
@@ -80,6 +80,7 @@ const CoinFlipApp = () => {
   const [page, setPage] = useState(0);
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [padOpen, setPadOpen] = useState(false);
+  const [endAsk, setEndAsk] = useState(false); // la fiche du Z rappelle les cartes à piocher
   const [gains, setGains] = useState(0); // réussites de la série en cours
   const [yusri, setYusri] = useState<{ etat: YusriEtat; declencheur: number }>({
     etat: 'repos',
@@ -165,9 +166,22 @@ const CoinFlipApp = () => {
     0,
     game.pendingDraws - unrevealed.reduce((n, f) => n + cardsFromFlip(f), 0),
   );
-  const shownDoublings =
-    turn.doublings -
-    unrevealed.reduce((n, f) => n + doublingsFromFlip(f), 0);
+
+  // Ferme la fiche du Z (et abandonne le rappel de fin de tour)
+  const closeZ = () => {
+    setOverlay(null);
+    setEndAsk(false);
+  };
+
+  // Fin de tour : s'il reste des cartes à piocher du Z, on le rappelle d'abord
+  const endTurnChecked = () => {
+    if (board.zndrsplt && shownDraws > 0) {
+      setEndAsk(true);
+      setOverlay('z');
+    } else {
+      g.endTurn();
+    }
+  };
 
   // Série d'Okaun ou du Z : le Pouce grossit à chaque réussite,
   // et s'affaisse si la série commence directement par un Lose
@@ -220,6 +234,33 @@ const CoinFlipApp = () => {
     }
   };
 
+  // Yusri, Okaun et le Z ne lancent qu'une fois par tour : un double appui de trop
+  // ne lance rien et fait vibrer longuement
+  const launchCard = (
+    card: LaunchCard,
+    run: () => Flip[],
+    react?: (flip: Flip, index: number, flips: Flip[]) => void,
+  ) => {
+    if (!g.canLaunch(card)) {
+      blockedHaptic();
+      return;
+    }
+    launch(run, react);
+  };
+
+  // Dans la fiche d'un personnage déjà utilisé : autoriser un nouveau lancer
+  // (combat supplémentaire)
+  const relaunchRow = (card: LaunchCard) =>
+    turn.launched[card] ? (
+      <View style={styles.relaunch}>
+        <Text style={styles.warn}>Déjà lancé ce tour</Text>
+        <SmallButton
+          title="Autoriser un nouveau lancer"
+          onPress={() => g.allowRelaunch(card)}
+        />
+      </View>
+    ) : null;
+
   // Yusri réagit à chaque lancer dévoilé ; 5 identiques déclenchent l'état « total »
   const reactYusri = (flip: Flip, index: number, flips: Flip[]) => {
     const win = flip.result === 'Win';
@@ -248,16 +289,8 @@ const CoinFlipApp = () => {
 
   const topBar = (
     <View style={styles.topBar}>
-      <View style={styles.row}>
-        <Text style={styles.label}>Mon tour</Text>
-        <CartoonSwitch value={turn.mine} onValueChange={g.setMyTurn} />
-      </View>
       <SmallButton title="+1 adv." onPress={g.opponentWin} />
-      <SmallButton
-        title="Fin de tour"
-        onPress={g.endTurn}
-        disabled={!board.okaun || shownDoublings <= 0}
-      />
+      <SmallButton title="Fin de tour" onPress={endTurnChecked} />
       <SmallButton
         title="↶"
         tone="neutral"
@@ -281,11 +314,11 @@ const CoinFlipApp = () => {
           <CharacterSlot
             size={art}
             present={board.yusri}
-          onPlace={withVoice('yusri', 'yusri_arrivee')}
-          onRemove={withVoice('yusri', 'yusri_depart')}
+            onPlace={withVoice('yusri', 'yusri_arrivee')}
+            onRemove={withVoice('yusri', 'yusri_depart')}
             onOpen={() => setOverlay('yusri')}
             onLaunch={() =>
-              launch(() => g.launchYusri(yusriCount), reactYusri)
+              launchCard('yusri', () => g.launchYusri(yusriCount), reactYusri)
             }
           >
             <Presence present={board.yusri} size={art}>
@@ -359,7 +392,7 @@ const CoinFlipApp = () => {
           onPlace={withVoice('zndrsplt', 'z_arrivee')}
           onRemove={withVoice('zndrsplt', 'z_depart')}
           onOpen={() => setOverlay('z')}
-          onLaunch={() => launch(g.launchZ, reactSerie)}
+          onLaunch={() => launchCard('zndrsplt', g.launchZ, reactSerie)}
           badge={<Text style={styles.big}>{shownDraws}</Text>}
         >
           <Presence present={board.zndrsplt} size={art}>
@@ -373,7 +406,7 @@ const CoinFlipApp = () => {
           onPlace={withVoice('okaun', 'okaun_arrivee')}
           onRemove={withVoice('okaun', 'okaun_depart')}
           onOpen={() => setOverlay('okaun')}
-          onLaunch={() => launch(g.launchOkaun, reactSerie)}
+          onLaunch={() => launchCard('okaun', g.launchOkaun, reactSerie)}
           badge={
             <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
               {okaunShown.power}/{okaunShown.toughness}
@@ -382,7 +415,8 @@ const CoinFlipApp = () => {
         >
           <Presence present={board.okaun} size={art}>
             {shown => <OkaunArt size={art} present={shown} />}
-          </Presence>        </CharacterSlot>
+          </Presence>
+        </CharacterSlot>
       </View>
 
       <View style={styles.space3} />
@@ -394,7 +428,6 @@ const CoinFlipApp = () => {
       series={shownSeries}
       turnFlips={shownTurnFlips}
       turnNumber={turn.number}
-      mine={turn.mine}
       onPress={skip}
     />
   );
@@ -514,6 +547,7 @@ const CoinFlipApp = () => {
             Pioche : {game.stats.cardsYusri} carte
             {game.stats.cardsYusri >= 2 ? 's' : ''}
           </Text>
+          {relaunchRow('yusri')}
         </CharacterDetail>
       </CardOverlay>
 
@@ -532,25 +566,48 @@ const CoinFlipApp = () => {
             onAdjust={g.adjustOkaun}
             onSetValue={g.setOkaunValue}
           />
+          {relaunchRow('okaun')}
         </CharacterDetail>
       </CardOverlay>
 
-      <CardOverlay visible={overlay === 'z'} onClose={() => setOverlay(null)}>
+      <CardOverlay visible={overlay === 'z'} onClose={closeZ}>
         <CharacterDetail
           title="Zndrsplt"
           artSize={artBig}
           art={<ZndrspltArt size={artBig} present={board.zndrsplt} />}
         >
+          {endAsk && (
+            <Text style={styles.warn}>
+              Il reste des cartes à piocher avant de finir le tour !
+            </Text>
+          )}
           <Text style={styles.zNumber}>{shownDraws}</Text>
           <Text style={styles.line}>cartes à piocher</Text>
-          <SmallButton
-            title="Pioché"
-            tone="action"
-            onPress={() => {
-              g.markCardsDrawn();
-              setOverlay(null);
-            }}
-          />
+          {endAsk ? (
+            <>
+              <SmallButton
+                title="Pioché, fin de tour"
+                tone="action"
+                onPress={() => {
+                  g.endTurn();
+                  closeZ();
+                }}
+              />
+              <SmallButton title="Retour" tone="neutral" onPress={closeZ} />
+            </>
+          ) : (
+            <>
+              <SmallButton
+                title="Pioché"
+                tone="action"
+                onPress={() => {
+                  g.markCardsDrawn();
+                  closeZ();
+                }}
+              />
+              {relaunchRow('zndrsplt')}
+            </>
+          )}
         </CharacterDetail>
       </CardOverlay>
 
@@ -576,8 +633,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#14141f' },
   center: { flex: 1, backgroundColor: '#14141f', justifyContent: 'center' },
   page: { flex: 1, padding: 12, gap: 10 },
-    pageMain: { flex: 1, padding: 12 },
+  pageMain: { flex: 1, padding: 12 },
   pageInner: { flex: 1, gap: 10 },
+  pageStatsL: { flex: 1, padding: 4 },
   // Paysage : le triangle à gauche, le reste à droite
   triangleP: { flex: 1 },
   triangleL: { position: 'absolute', top: 0, bottom: 0, left: 0, width: '48%' },
@@ -607,9 +665,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  label: { color: '#ecf0f1', fontSize: 15, fontWeight: 'bold' },
-  triangle: { flex: 1, alignItems: 'center', justifyContent: 'space-evenly' },
+  triangle: { flex: 1, alignItems: 'center' },
   yusriRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -658,7 +714,13 @@ const styles = StyleSheet.create({
   dots: { color: '#7f8c8d', textAlign: 'center', fontSize: 12 },
   zNumber: { color: '#ffffff', fontSize: 56, fontWeight: 'bold' },
   line: { color: '#bdc3c7', fontSize: 15 },
-  pageStatsL: { flex: 1, padding: 4 },
+  warn: {
+    color: '#f6c21d',
+    fontSize: 15,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  relaunch: { alignItems: 'center', gap: 6 },
 });
 
 const App = () => (

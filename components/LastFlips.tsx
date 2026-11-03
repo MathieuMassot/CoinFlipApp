@@ -39,11 +39,10 @@ type Props = {
   series: RecordedFlip[]; // les lancers de la série déjà dévoilés
   turnFlips: RecordedFlip[]; // tous les lancers du tour
   turnNumber: number;
-  mine: boolean;
   onPress?: () => void; // saute l'animation
 };
 
-const LastFlips = ({ series, turnFlips, turnNumber, mine, onPress }: Props) => {
+const LastFlips = ({ series, turnFlips, turnNumber, onPress }: Props) => {
   const wins = series.filter(f => f.result === 'Win').length;
   const losses = series.length - wins;
   const first = series[0];
@@ -99,8 +98,7 @@ const LastFlips = ({ series, turnFlips, turnNumber, mine, onPress }: Props) => {
       </View>
 
       <Text style={styles.historyTitle}>
-        Tour {turnNumber}
-        {mine ? ' (le mien)' : ''} · {turnFlips.length} lancers
+        Tour {turnNumber} · {turnFlips.length} lancers
       </Text>
       <View style={styles.chips}>
         {turnFlips.slice(-45).map((f, i) => (
