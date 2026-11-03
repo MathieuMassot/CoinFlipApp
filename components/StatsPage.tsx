@@ -145,7 +145,7 @@ const StatsPage = ({
         />
       </View>
 
-      <Text style={styles.subtitle}>
+      <Text style={[styles.subtitle, landscape && styles.subtitleL]}>
         {tab === 'game' && 'Partie en cours'}
         {tab === 'total' &&
           `Total (${all.length} partie${all.length > 1 ? 's' : ''}, partie en cours incluse)`}
@@ -238,7 +238,6 @@ const StatsPage = ({
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 6 },
-  contentL: { paddingVertical: 8, paddingHorizontal: 12 },
   tabs: { flexDirection: 'row', justifyContent: 'center', gap: 8 },
   subtitle: {
     color: '#ecf0f1',
@@ -263,14 +262,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
   },
-  cardL: { width: '48.5%', minHeight: 72, marginTop: 20 },
   art: {
     position: 'absolute',
     top: -26,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  artL: { top: -20 },
   artLeft: { left: -8 },
   artRight: { right: -8 },
   line: {
@@ -289,7 +286,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 22,
   },
-  actionsL: { marginTop: 14 },
+    contentL: { paddingVertical: 4, paddingHorizontal: 8, gap: 4 },
+  subtitleL: { marginTop: 0 },
+  cardL: {
+    width: '48.5%',
+    minHeight: 64,
+    marginTop: 16,
+    paddingVertical: 8,
+    gap: 2,
+  },
+  artL: { top: -16 },
+  actionsL: { marginTop: 10 },
 });
 
 export default StatsPage;

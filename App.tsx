@@ -407,7 +407,7 @@ const CoinFlipApp = () => {
   );
 
   const statsPage = (
-    <View style={styles.page}>
+    <View style={landscape ? styles.pageStatsL : styles.page}>
       <StatsPage
         game={game}
         records={g.records}
@@ -609,6 +609,7 @@ const styles = StyleSheet.create({
   dots: { color: '#7f8c8d', textAlign: 'center', fontSize: 12 },
   zNumber: { color: '#ffffff', fontSize: 56, fontWeight: 'bold' },
   line: { color: '#bdc3c7', fontSize: 15 },
+    pageStatsL: { flex: 1, padding: 4 },
 });
 
 const App = () => (
