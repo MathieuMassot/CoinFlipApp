@@ -4,7 +4,6 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -15,6 +14,7 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
+import CartoonSwitch from './components/CartoonSwitch';
 import CardOverlay from './components/CardOverlay';
 import CharacterDetail from './components/CharacterDetail';
 import YusriDrag from './components/YusriDrag';
@@ -39,6 +39,7 @@ import { useGame } from './useGame';
 import { useReveal } from './useReveal';
 import { useSounds } from './useSounds';
 import CharacterSlot from './components/CharacterSlot';
+import Presence from './components/characters/Presence';
 
 type Overlay = 'z' | 'okaun' | 'yusri' | null;
 
@@ -239,7 +240,7 @@ const CoinFlipApp = () => {
     <View style={styles.topBar}>
       <View style={styles.row}>
         <Text style={styles.label}>Mon tour</Text>
-        <Switch value={turn.mine} onValueChange={g.setMyTurn} />
+        <CartoonSwitch value={turn.mine} onValueChange={g.setMyTurn} />
       </View>
       <SmallButton title="+1 adv." onPress={g.opponentWin} />
       <SmallButton
@@ -247,7 +248,12 @@ const CoinFlipApp = () => {
         onPress={g.endTurn}
         disabled={!board.okaun || shownDoublings <= 0}
       />
-      <SmallButton title="↶" onPress={g.undo} disabled={!g.canUndo} />
+      <SmallButton
+        title="↶"
+        tone="neutral"
+        onPress={g.undo}
+        disabled={!g.canUndo}
+      />
     </View>
   );
 
@@ -272,16 +278,22 @@ const CoinFlipApp = () => {
               launch(() => g.launchYusri(yusriCount), reactYusri)
             }
           >
-            <YusriArt
-              size={art}
-              present={board.yusri}
-              etat={yusri.etat}
-              declencheur={yusri.declencheur}
-              nombrePieces={yusriCount}
-              victoiresConsecutives={streak.wins}
-              echecsConsecutifs={streak.losses}
-              onAnimationFin={() => setYusri(y => ({ ...y, etat: 'repos' }))}
-            />
+            <Presence present={board.yusri} size={art}>
+              {shown => (
+                <YusriArt
+                  size={art}
+                  present={shown}
+                  etat={yusri.etat}
+                  declencheur={yusri.declencheur}
+                  nombrePieces={yusriCount}
+                  victoiresConsecutives={streak.wins}
+                  echecsConsecutifs={streak.losses}
+                  onAnimationFin={() =>
+                    setYusri(y => ({ ...y, etat: 'repos' }))
+                  }
+                />
+              )}
+            </Presence>
           </CharacterSlot>
         </YusriDrag>
       </View>
@@ -300,25 +312,29 @@ const CoinFlipApp = () => {
           activeOpacity={0.85}
           onPress={() => g.toggleBoard('thumb')}
         >
-          <PouceDeKrark
-            size={thumbPx}
-            present={board.thumb}
-            etat={thumb.etat}
-            declencheur={thumb.declencheur}
-            nombreFrappes={thumb.frappes}
-            gains={gains}
-            onAnimationFin={() =>
-              setThumb(t =>
-                t.suite
-                  ? {
-                      etat: t.suite,
-                      declencheur: t.declencheur + 1,
-                      frappes: 1,
-                    }
-                  : { ...t, etat: 'repos' },
-              )
-            }
-          />
+          <Presence present={board.thumb} size={thumbPx} onde={false}>
+            {shown => (
+              <PouceDeKrark
+                size={thumbPx}
+                present={shown}
+                etat={thumb.etat}
+                declencheur={thumb.declencheur}
+                nombreFrappes={thumb.frappes}
+                gains={gains}
+                onAnimationFin={() =>
+                  setThumb(t =>
+                    t.suite
+                      ? {
+                          etat: t.suite,
+                          declencheur: t.declencheur + 1,
+                          frappes: 1,
+                        }
+                      : { ...t, etat: 'repos' },
+                  )
+                }
+              />
+            )}
+          </Presence>
         </TouchableOpacity>
       </View>
 
@@ -336,7 +352,9 @@ const CoinFlipApp = () => {
           onLaunch={() => launch(g.launchZ, reactSerie)}
           badge={<Text style={styles.big}>{shownDraws}</Text>}
         >
-          <ZndrspltArt size={art} present={board.zndrsplt} />
+          <Presence present={board.zndrsplt} size={art}>
+            {shown => <ZndrspltArt size={art} present={shown} />}
+          </Presence>
         </CharacterSlot>
 
         <CharacterSlot
@@ -352,8 +370,9 @@ const CoinFlipApp = () => {
             </Text>
           }
         >
-          <OkaunArt size={art} present={board.okaun} />
-        </CharacterSlot>
+          <Presence present={board.okaun} size={art}>
+            {shown => <OkaunArt size={art} present={shown} />}
+          </Presence>        </CharacterSlot>
       </View>
 
       <View style={styles.space3} />
@@ -374,6 +393,7 @@ const CoinFlipApp = () => {
     <View style={styles.freeBar}>
       <SmallButton
         title="−"
+        tone="neutral"
         onPress={() => addToCount(-1)}
         onLongPress={() => addToCount(-10)}
       />
@@ -382,16 +402,19 @@ const CoinFlipApp = () => {
       </TouchableOpacity>
       <SmallButton
         title="+"
+        tone="neutral"
         onPress={() => addToCount(1)}
         onLongPress={() => addToCount(10)}
       />
       <SmallButton
         title="Lancer"
+        tone="action"
         onPress={() => launch(() => g.launchFree(count))}
         disabled={count === 0}
       />
       <SmallButton
         title="∞ Lose"
+        tone="force"
         onPress={() => launch(g.launchFreeUntilLose)}
       />
     </View>
@@ -512,6 +535,7 @@ const CoinFlipApp = () => {
           <Text style={styles.line}>cartes à piocher</Text>
           <SmallButton
             title="Pioché"
+            tone="action"
             onPress={() => {
               g.markCardsDrawn();
               setOverlay(null);
@@ -603,10 +627,11 @@ const styles = StyleSheet.create({
   },
   input: {
     width: 62,
-    height: 38,
-    borderWidth: 1,
-    borderColor: '#7f8c8d',
-    borderRadius: 10,
+    height: 39,
+    borderWidth: 2.5,
+    borderColor: '#5a6a85',
+    borderRadius: 12,
+    backgroundColor: '#0d0f18',
     alignItems: 'center',
     justifyContent: 'center',
   },

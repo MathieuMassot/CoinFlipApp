@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -10,22 +9,28 @@ import NumberPad from './NumberPad';
 import SmallButton from './SmallButton';
 import { Stats } from '../game';
 import { useLandscape } from '../useLandscape';
+import CartoonSwitch from './CartoonSwitch';
+import { TONES, Tone } from '../theme';
 
 type StatRowProps = {
   label: string;
   value: number;
+  tone: Tone;
   onDelta: (d: number) => void;
   onEdit: () => void;
 };
 
-const StatRow = ({ label, value, onDelta, onEdit }: StatRowProps) => (
+const StatRow = ({ label, value, tone, onDelta, onEdit }: StatRowProps) => (
   <View style={styles.statRow}>
     <Text style={styles.statLabel}>{label}</Text>
-    <SmallButton title="−1" onPress={() => onDelta(-1)} />
-    <SmallButton title="+1" onPress={() => onDelta(1)} />
-    <SmallButton title="+3" onPress={() => onDelta(3)} />
+    <SmallButton title="−1" tone={tone} onPress={() => onDelta(-1)} />
+    <SmallButton title="+1" tone={tone} onPress={() => onDelta(1)} />
+    <SmallButton title="+3" tone={tone} onPress={() => onDelta(3)} />
     {/* On touche la valeur pour la saisir au pavé numérique */}
-    <TouchableOpacity style={styles.statValue} onPress={onEdit}>
+    <TouchableOpacity
+      style={[styles.statValue, { borderColor: TONES[tone].face }]}
+      onPress={onEdit}
+    >
       <Text style={styles.statValueText}>{value}</Text>
     </TouchableOpacity>
   </View>
@@ -77,10 +82,11 @@ const OkaunPanel = ({ now, base, onAdjust, onSetValue }: Props) => {
             <Text style={[styles.mode, permanent && styles.modeOn]}>
               Permanent
             </Text>
-            <Switch
+            <CartoonSwitch
               value={!permanent}
               onValueChange={v => setPermanent(!v)}
               disabled={editing !== null}
+              tone="default"
             />
             <Text style={[styles.mode, !permanent && styles.modeOn]}>
               Ce tour seulement
@@ -104,12 +110,14 @@ const OkaunPanel = ({ now, base, onAdjust, onSetValue }: Props) => {
         <>
           <StatRow
             label="Force"
+            tone="force"
             value={shown.power}
             onDelta={d => onAdjust({ power: d, toughness: 0 }, permanent)}
             onEdit={() => setEditing('power')}
           />
           <StatRow
             label="Endurance"
+            tone="endurance"
             value={shown.toughness}
             onDelta={d => onAdjust({ power: 0, toughness: d }, permanent)}
             onEdit={() => setEditing('toughness')}

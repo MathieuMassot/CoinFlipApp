@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import SmallButton from './SmallButton';
+import { BUTTON_DEPTH, Tone } from '../theme';
 import { useLandscape } from '../useLandscape';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', 'OK'];
 const GAP = 8;
+
+const keyTone = (key: string): Tone =>
+  key === 'OK' ? 'action' : key === '⌫' ? 'danger' : 'neutral';
 
 type Props = {
   title: string;
@@ -23,7 +27,7 @@ const NumberPad = ({
 }: Props) => {
   const landscape = useLandscape();
   const keyW = landscape ? 62 : 72;
-  const keyH = landscape ? 44 : 52;
+  const keyH = landscape ? 44 : 52; // hauteur totale, épaisseur comprise
 
   const [text, setText] = useState(String(initial));
   // Le premier chiffre remplace la valeur affichée, comme sur une calculatrice
@@ -47,7 +51,7 @@ const NumberPad = ({
     setFresh(false);
   };
 
-  const cancel = <SmallButton title="Annuler" onPress={onCancel} />;
+  const cancel = <SmallButton title="Annuler" tone="neutral" onPress={onCancel} />;
 
   // Portrait : tout en colonne. Paysage : la valeur à gauche, les touches à droite.
   return (
@@ -57,22 +61,17 @@ const NumberPad = ({
         <Text style={styles.display}>{text || '0'}</Text>
         {landscape && cancel}
       </View>
-      <View
-        style={[styles.keys, { width: keyW * 3 + GAP * 2 }]}
-      >
+      <View style={[styles.keys, { width: keyW * 3 + GAP * 2 }]}>
         {KEYS.map(key => (
-          <TouchableOpacity
+          <SmallButton
             key={key}
-            style={[
-              styles.key,
-              { width: keyW, height: keyH },
-              key === 'OK' && styles.keyOk,
-              key === '⌫' && styles.keyBack,
-            ]}
+            title={key}
+            tone={keyTone(key)}
+            width={keyW}
+            height={keyH - BUTTON_DEPTH}
+            fontSize={22}
             onPress={() => press(key)}
-          >
-            <Text style={styles.keyText}>{key}</Text>
-          </TouchableOpacity>
+          />
         ))}
       </View>
       {!landscape && cancel}
@@ -87,15 +86,6 @@ const styles = StyleSheet.create({
   title: { color: '#95a5a6', fontSize: 14, textAlign: 'center' },
   display: { color: '#ffffff', fontSize: 40, fontWeight: 'bold' },
   keys: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
-  key: {
-    borderRadius: 12,
-    backgroundColor: '#34495e',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  keyOk: { backgroundColor: '#27ae60' },
-  keyBack: { backgroundColor: '#5d6d7e' },
-  keyText: { color: '#ffffff', fontSize: 22, fontWeight: 'bold' },
 });
 
 export default NumberPad;

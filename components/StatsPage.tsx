@@ -203,6 +203,7 @@ const StatsPage = ({
       <View style={[styles.actions, landscape && styles.actionsL]}>
         <SmallButton
           title="Nouvelle partie"
+          tone="action"
           onPress={() =>
             confirm(
               'Nouvelle partie ?',
@@ -213,6 +214,7 @@ const StatsPage = ({
         />
         <SmallButton
           title="Fin de partie"
+          
           onPress={() =>
             confirm(
               'Terminer la partie ?',
@@ -223,6 +225,7 @@ const StatsPage = ({
         />
         <SmallButton
           title="Effacer l'historique"
+          danger
           onPress={() =>
             confirm(
               'Effacer l’historique ?',
