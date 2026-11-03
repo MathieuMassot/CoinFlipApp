@@ -8,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useKeepAwake } from '@sayem314/react-native-keep-awake';
 import {
@@ -41,13 +42,20 @@ import { useSounds } from './useSounds';
 
 type Overlay = 'z' | 'okaun' | 'yusri' | null;
 
-const ART = 124; // taille d'affichage des personnages
+const ART = 124; // taille des personnages en portrait
+const ART_L = 108; // taille des personnages en paysage
 const ART_BIG = 230; // taille dans le détail
-const THUMB = 84; // taille du Pouce, entre le Z et Okaun
+const THUMB = 84; // taille du Pouce en portrait
+const THUMB_L = 72; // taille du Pouce en paysage
 
 const CoinFlipApp = () => {
   useKeepAwake();
   const insets = useSafeAreaInsets();
+  const win = useWindowDimensions();
+  const landscape = win.width > win.height;
+  const art = landscape ? ART_L : ART;
+  const thumbPx = landscape ? THUMB_L : THUMB;
+
   const { reveal, start, skip } = useReveal();
   const sounds = useSounds();
   const pendingEvents = useRef<GameEvent[]>([]);
@@ -56,6 +64,7 @@ const CoinFlipApp = () => {
   }, []);
   const g = useGame({ onBeforeChange: skip, onEvents: queueEvents });
 
+  const pagerRef = useRef<React.ElementRef<typeof ScrollView>>(null);
   const [yusriCount, setYusriCount] = useState(5);
   const [countText, setCountText] = useState('1');
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -63,6 +72,8 @@ const CoinFlipApp = () => {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [padOpen, setPadOpen] = useState(false);
   const [gains, setGains] = useState(0); // réussites de la série en cours
+  // Position verticale des deux rangées du triangle, pour centrer le Pouce
+  const [rowY, setRowY] = useState({ top: 0, bottom: 0 });
   const [yusri, setYusri] = useState<{ etat: YusriEtat; declencheur: number }>({
     etat: 'repos',
     declencheur: 0,
@@ -95,6 +106,13 @@ const CoinFlipApp = () => {
     }
   }, [reveal]);
 
+  // Après une rotation, on recale le pager sur la page affichée
+  useEffect(() => {
+    pagerRef.current?.scrollTo({ x: page * size.width, animated: false });
+    // seul un changement de largeur doit recaler le pager
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [size.width]);
+
   // Marges pour ne pas passer sous l'heure, l'appareil photo ou la barre de navigation
   const safeStyle = {
     paddingTop: insets.top,
@@ -102,9 +120,6 @@ const CoinFlipApp = () => {
     paddingLeft: insets.left,
     paddingRight: insets.right,
   };
-
-    // Position verticale des deux rangées du triangle, pour centrer le Pouce
-  const [rowY, setRowY] = useState({ top: 0, bottom: 0 });
 
   if (!g.loaded) {
     return (
@@ -127,10 +142,8 @@ const CoinFlipApp = () => {
     reveal && reveal.steps
       ? reveal.steps[Math.min(reveal.count, reveal.steps.length) - 1]
       : game.okaunNow;
-    // Le Pouce est au centre de gravité du triangle formé par les trois personnages
-  const thumbTop =
-    (rowY.top + ART / 2 + 2 * (rowY.bottom + ART / 2)) / 3 - THUMB / 2;
-    // Ce qui n'est pas encore dévoilé ne doit apparaître nulle part
+
+  // Ce qui n'est pas encore dévoilé ne doit apparaître nulle part
   const unrevealed = game.lastSeries.slice(revealCount);
   const shownDraws = Math.max(
     0,
@@ -139,6 +152,10 @@ const CoinFlipApp = () => {
   const shownDoublings =
     turn.doublings -
     unrevealed.reduce((n, f) => n + doublingsFromFlip(f), 0);
+
+  // Le Pouce est au centre de gravité du triangle formé par les trois personnages
+  const thumbTop =
+    (rowY.top + art / 2 + 2 * (rowY.bottom + art / 2)) / 3 - thumbPx / 2;
 
   // Série d'Okaun ou du Z : le Pouce grossit à chaque réussite,
   // et s'affaisse si la série commence directement par un Lose
@@ -215,161 +232,183 @@ const CoinFlipApp = () => {
 
   const dots = page === 0 ? '● ○' : '○ ●';
 
-  const mainPage = (
-    <View style={styles.page}>
-      <View style={styles.topBar}>
-        <View style={styles.row}>
-          <Text style={styles.label}>Mon tour</Text>
-          <Switch value={turn.mine} onValueChange={g.setMyTurn} />
+  // ───── Les quatre blocs de l'écran principal ─────
+
+  const topBar = (
+    <View style={styles.topBar}>
+      <View style={styles.row}>
+        <Text style={styles.label}>Mon tour</Text>
+        <Switch value={turn.mine} onValueChange={g.setMyTurn} />
+      </View>
+      <SmallButton title="+1 adv." onPress={g.opponentWin} />
+      <SmallButton
+        title="Fin de tour"
+        onPress={g.endTurn}
+        disabled={!board.okaun || shownDoublings <= 0}
+      />
+      <SmallButton title="↶" onPress={g.undo} disabled={!g.canUndo} />
+    </View>
+  );
+
+  const triangle = (
+    <View style={styles.triangle}>
+      <View
+        style={styles.yusriRow}
+        onLayout={e => setRowY(r => ({ ...r, top: e.nativeEvent.layout.y }))}
+      >
+        <View style={styles.yusriSide} />
+        <CharacterSlot
+          size={art}
+          present={board.yusri}
+          onPlace={() => g.toggleBoard('yusri')}
+          onRemove={() => g.toggleBoard('yusri')}
+          onOpen={() => setOverlay('yusri')}
+          onLaunch={() => launch(() => g.launchYusri(yusriCount), reactYusri)}
+        >
+          <YusriArt
+            size={art}
+            present={board.yusri}
+            etat={yusri.etat}
+            declencheur={yusri.declencheur}
+            nombrePieces={yusriCount}
+            victoiresConsecutives={streak.wins}
+            echecsConsecutifs={streak.losses}
+            onAnimationFin={() => setYusri(y => ({ ...y, etat: 'repos' }))}
+          />
+        </CharacterSlot>
+        <View style={styles.yusriSide}>
+          <SlotReel
+            value={yusriCount}
+            onChange={setYusriCount}
+            enabled={board.yusri}
+          />
         </View>
-        <SmallButton title="+1 adv." onPress={g.opponentWin} />
-        <SmallButton
-          title="Fin de tour"
-          onPress={g.endTurn}
-          disabled={!board.okaun || shownDoublings <= 0}
-        />
-        <SmallButton title="↶" onPress={g.undo} disabled={!g.canUndo} />
       </View>
 
-      <View style={styles.triangle}>
-        <View
-          style={styles.yusriRow}
-          onLayout={e => setRowY(r => ({ ...r, top: e.nativeEvent.layout.y }))}
+      <View
+        style={[styles.triangleRow, landscape && styles.triangleRowLandscape]}
+        onLayout={e =>
+          setRowY(r => ({ ...r, bottom: e.nativeEvent.layout.y }))
+        }
+      >
+        <CharacterSlot
+          size={art}
+          present={board.zndrsplt}
+          onPlace={() => g.toggleBoard('zndrsplt')}
+          onRemove={() => g.toggleBoard('zndrsplt')}
+          onOpen={() => setOverlay('z')}
+          onLaunch={() => launch(g.launchZ, reactSerie)}
+          badge={<Text style={styles.big}>{shownDraws}</Text>}
         >
-          <View style={styles.yusriSide} />
-          <CharacterSlot
-            size={ART}
-            present={board.yusri}
-            onPlace={() => g.toggleBoard('yusri')}
-            onRemove={() => g.toggleBoard('yusri')}
-            onOpen={() => setOverlay('yusri')}
-            onLaunch={() =>
-              launch(() => g.launchYusri(yusriCount), reactYusri)
-            }
-          >
-            <YusriArt
-              size={ART}
-              present={board.yusri}
-              etat={yusri.etat}
-              declencheur={yusri.declencheur}
-              nombrePieces={yusriCount}
-              victoiresConsecutives={streak.wins}
-              echecsConsecutifs={streak.losses}
-              onAnimationFin={() => setYusri(y => ({ ...y, etat: 'repos' }))}
-            />
-          </CharacterSlot>
-          <View style={styles.yusriSide}>
-            <SlotReel
-              value={yusriCount}
-              onChange={setYusriCount}
-              enabled={board.yusri}
-            />
-          </View>
-        </View>
+          <ZndrspltArt size={art} present={board.zndrsplt} />
+        </CharacterSlot>
 
-        <View
-          style={styles.triangleRow}
-          onLayout={e =>
-            setRowY(r => ({ ...r, bottom: e.nativeEvent.layout.y }))
+        <CharacterSlot
+          size={art}
+          present={board.okaun}
+          onPlace={() => g.toggleBoard('okaun')}
+          onRemove={() => g.toggleBoard('okaun')}
+          onOpen={() => setOverlay('okaun')}
+          onLaunch={() => launch(g.launchOkaun, reactSerie)}
+          badge={
+            <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
+              {okaunShown.power}/{okaunShown.toughness}
+            </Text>
           }
         >
-          <CharacterSlot
-            size={ART}
-            present={board.zndrsplt}
-            onPlace={() => g.toggleBoard('zndrsplt')}
-            onRemove={() => g.toggleBoard('zndrsplt')}
-            onOpen={() => setOverlay('z')}
-            onLaunch={() => launch(g.launchZ, reactSerie)}
-            badge={<Text style={styles.big}>{shownDraws}</Text>}
-          >
-            <ZndrspltArt size={ART} present={board.zndrsplt} />
-          </CharacterSlot>
+          <OkaunArt size={art} present={board.okaun} />
+        </CharacterSlot>
+      </View>
 
-          <CharacterSlot
-            size={ART}
-            present={board.okaun}
-            onPlace={() => g.toggleBoard('okaun')}
-            onRemove={() => g.toggleBoard('okaun')}
-            onOpen={() => setOverlay('okaun')}
-            onLaunch={() => launch(g.launchOkaun, reactSerie)}
-            badge={
-              <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
-                {okaunShown.power}/{okaunShown.toughness}
-              </Text>
-            }
-          >
-            <OkaunArt size={ART} present={board.okaun} />
-          </CharacterSlot>
-        </View>
-
-        {/* Le Pouce, au centre du triangle (invisible le temps de mesurer) */}
-        <View
-          style={[
-            styles.thumbWrap,
-            { top: thumbTop },
-            rowY.bottom === 0 && styles.thumbHidden,
-          ]}
+      {/* Le Pouce, au centre du triangle (invisible le temps de mesurer) */}
+      <View
+        style={[
+          styles.thumbWrap,
+          { top: thumbTop },
+          rowY.bottom === 0 && styles.thumbHidden,
+        ]}
+      >
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => g.toggleBoard('thumb')}
         >
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => g.toggleBoard('thumb')}
-          >
-            <PouceDeKrark
-              size={THUMB}
-              present={board.thumb}
-              etat={thumb.etat}
-              declencheur={thumb.declencheur}
-              nombreFrappes={thumb.frappes}
-              gains={gains}
-              onAnimationFin={() =>
-                setThumb(t =>
-                  t.suite
-                    ? {
-                        etat: t.suite,
-                        declencheur: t.declencheur + 1,
-                        frappes: 1,
-                      }
-                    : { ...t, etat: 'repos' },
-                )
-              }
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <LastFlips
-        series={shownSeries}
-        turnFlips={shownTurnFlips}
-        turnNumber={turn.number}
-        mine={turn.mine}
-        onPress={skip}
-      />
-
-      <View style={styles.freeBar}>
-        <SmallButton
-          title="−"
-          onPress={() => addToCount(-1)}
-          onLongPress={() => addToCount(-10)}
-        />
-        <TouchableOpacity style={styles.input} onPress={() => setPadOpen(true)}>
-          <Text style={styles.inputText}>{count}</Text>
+          <PouceDeKrark
+            size={thumbPx}
+            present={board.thumb}
+            etat={thumb.etat}
+            declencheur={thumb.declencheur}
+            nombreFrappes={thumb.frappes}
+            gains={gains}
+            onAnimationFin={() =>
+              setThumb(t =>
+                t.suite
+                  ? {
+                      etat: t.suite,
+                      declencheur: t.declencheur + 1,
+                      frappes: 1,
+                    }
+                  : { ...t, etat: 'repos' },
+              )
+            }
+          />
         </TouchableOpacity>
-        <SmallButton
-          title="+"
-          onPress={() => addToCount(1)}
-          onLongPress={() => addToCount(10)}
-        />
-        <SmallButton
-          title="Lancer"
-          onPress={() => launch(() => g.launchFree(count))}
-          disabled={count === 0}
-        />
-        <SmallButton
-          title="∞ Lose"
-          onPress={() => launch(g.launchFreeUntilLose)}
-        />
       </View>
+    </View>
+  );
 
+  const results = (
+    <LastFlips
+      series={shownSeries}
+      turnFlips={shownTurnFlips}
+      turnNumber={turn.number}
+      mine={turn.mine}
+      onPress={skip}
+    />
+  );
+
+  const freeBar = (
+    <View style={styles.freeBar}>
+      <SmallButton
+        title="−"
+        onPress={() => addToCount(-1)}
+        onLongPress={() => addToCount(-10)}
+      />
+      <TouchableOpacity style={styles.input} onPress={() => setPadOpen(true)}>
+        <Text style={styles.inputText}>{count}</Text>
+      </TouchableOpacity>
+      <SmallButton
+        title="+"
+        onPress={() => addToCount(1)}
+        onLongPress={() => addToCount(10)}
+      />
+      <SmallButton
+        title="Lancer"
+        onPress={() => launch(() => g.launchFree(count))}
+        disabled={count === 0}
+      />
+      <SmallButton
+        title="∞ Lose"
+        onPress={() => launch(g.launchFreeUntilLose)}
+      />
+    </View>
+  );
+
+  // Portrait : tout s'empile. Paysage : le triangle à gauche, le reste à droite.
+  const mainPage = landscape ? (
+    <View style={[styles.page, styles.pageLandscape]}>
+      <View style={styles.leftCol}>{triangle}</View>
+      <View style={styles.rightCol}>
+        {topBar}
+        {results}
+        {freeBar}
+      </View>
+    </View>
+  ) : (
+    <View style={styles.page}>
+      {topBar}
+      {triangle}
+      {results}
+      {freeBar}
       <Text style={styles.dots}>{dots}</Text>
     </View>
   );
@@ -383,7 +422,7 @@ const CoinFlipApp = () => {
         onFinishGame={g.finishGame}
         onResetRecords={g.resetRecords}
       />
-      <Text style={styles.dots}>{dots}</Text>
+      {!landscape && <Text style={styles.dots}>{dots}</Text>}
     </View>
   );
 
@@ -391,6 +430,7 @@ const CoinFlipApp = () => {
     <View style={[styles.container, safeStyle]}>
       <StatusBar barStyle="light-content" />
       <ScrollView
+        ref={pagerRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -494,6 +534,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#14141f' },
   center: { flex: 1, backgroundColor: '#14141f', justifyContent: 'center' },
   page: { flex: 1, padding: 12, gap: 10 },
+  pageLandscape: { flexDirection: 'row', gap: 16 },
+  leftCol: { flex: 1 },
+  rightCol: { flex: 1, justifyContent: 'space-between' },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -515,9 +558,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     width: '100%',
   },
-  thumb: { alignItems: 'center' },
-  thumbLabel: { color: '#ecf0f1', fontSize: 12, fontWeight: 'bold' },
-    // Le Pouce flotte au-dessus des rangées sans les bloquer : seul lui reçoit les appuis
+  triangleRowLandscape: { justifyContent: 'space-around' },
+  // Le Pouce flotte au-dessus des rangées sans les bloquer : seul lui reçoit les appuis
   thumbWrap: {
     position: 'absolute',
     left: 0,
@@ -525,7 +567,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     pointerEvents: 'box-none',
   },
-    thumbHidden: { opacity: 0 },
+  thumbHidden: { opacity: 0 },
   big: {
     color: '#ecf0f1',
     fontSize: 17,
