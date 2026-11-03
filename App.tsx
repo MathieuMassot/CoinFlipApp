@@ -103,6 +103,9 @@ const CoinFlipApp = () => {
     paddingRight: insets.right,
   };
 
+    // Position verticale des deux rangées du triangle, pour centrer le Pouce
+  const [rowY, setRowY] = useState({ top: 0, bottom: 0 });
+
   if (!g.loaded) {
     return (
       <View style={[styles.center, safeStyle]}>
@@ -124,7 +127,9 @@ const CoinFlipApp = () => {
     reveal && reveal.steps
       ? reveal.steps[Math.min(reveal.count, reveal.steps.length) - 1]
       : game.okaunNow;
-
+    // Le Pouce est au centre de gravité du triangle formé par les trois personnages
+  const thumbTop =
+    (rowY.top + ART / 2 + 2 * (rowY.bottom + ART / 2)) / 3 - THUMB / 2;
     // Ce qui n'est pas encore dévoilé ne doit apparaître nulle part
   const unrevealed = game.lastSeries.slice(revealCount);
   const shownDraws = Math.max(
@@ -227,7 +232,10 @@ const CoinFlipApp = () => {
       </View>
 
       <View style={styles.triangle}>
-        <View style={styles.yusriRow}>
+        <View
+          style={styles.yusriRow}
+          onLayout={e => setRowY(r => ({ ...r, top: e.nativeEvent.layout.y }))}
+        >
           <View style={styles.yusriSide} />
           <CharacterSlot
             size={ART}
@@ -238,7 +246,6 @@ const CoinFlipApp = () => {
             onLaunch={() =>
               launch(() => g.launchYusri(yusriCount), reactYusri)
             }
-            badge={<Text style={styles.big}>×{yusriCount}</Text>}
           >
             <YusriArt
               size={ART}
@@ -260,7 +267,12 @@ const CoinFlipApp = () => {
           </View>
         </View>
 
-        <View style={styles.triangleRow}>
+        <View
+          style={styles.triangleRow}
+          onLayout={e =>
+            setRowY(r => ({ ...r, bottom: e.nativeEvent.layout.y }))
+          }
+        >
           <CharacterSlot
             size={ART}
             present={board.zndrsplt}
@@ -268,15 +280,37 @@ const CoinFlipApp = () => {
             onRemove={() => g.toggleBoard('zndrsplt')}
             onOpen={() => setOverlay('z')}
             onLaunch={() => launch(g.launchZ, reactSerie)}
-            badge={
-              <Text style={styles.big}>À piocher : {shownDraws}</Text>
-            }
+            badge={<Text style={styles.big}>{shownDraws}</Text>}
           >
             <ZndrspltArt size={ART} present={board.zndrsplt} />
           </CharacterSlot>
 
+          <CharacterSlot
+            size={ART}
+            present={board.okaun}
+            onPlace={() => g.toggleBoard('okaun')}
+            onRemove={() => g.toggleBoard('okaun')}
+            onOpen={() => setOverlay('okaun')}
+            onLaunch={() => launch(g.launchOkaun, reactSerie)}
+            badge={
+              <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
+                {okaunShown.power}/{okaunShown.toughness}
+              </Text>
+            }
+          >
+            <OkaunArt size={ART} present={board.okaun} />
+          </CharacterSlot>
+        </View>
+
+        {/* Le Pouce, au centre du triangle (invisible le temps de mesurer) */}
+        <View
+          style={[
+            styles.thumbWrap,
+            { top: thumbTop },
+            rowY.bottom === 0 && styles.thumbHidden,
+          ]}
+        >
           <TouchableOpacity
-            style={styles.thumb}
             activeOpacity={0.85}
             onPress={() => g.toggleBoard('thumb')}
           >
@@ -299,24 +333,7 @@ const CoinFlipApp = () => {
                 )
               }
             />
-            <Text style={styles.thumbLabel}>Pouce</Text>
           </TouchableOpacity>
-
-          <CharacterSlot
-            size={ART}
-            present={board.okaun}
-            onPlace={() => g.toggleBoard('okaun')}
-            onRemove={() => g.toggleBoard('okaun')}
-            onOpen={() => setOverlay('okaun')}
-            onLaunch={() => launch(g.launchOkaun, reactSerie)}
-            badge={
-              <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
-                {okaunShown.power}/{okaunShown.toughness}
-              </Text>
-            }
-          >
-            <OkaunArt size={ART} present={board.okaun} />
-          </CharacterSlot>
         </View>
       </View>
 
@@ -500,6 +517,15 @@ const styles = StyleSheet.create({
   },
   thumb: { alignItems: 'center' },
   thumbLabel: { color: '#ecf0f1', fontSize: 12, fontWeight: 'bold' },
+    // Le Pouce flotte au-dessus des rangées sans les bloquer : seul lui reçoit les appuis
+  thumbWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    pointerEvents: 'box-none',
+  },
+    thumbHidden: { opacity: 0 },
   big: {
     color: '#ecf0f1',
     fontSize: 17,

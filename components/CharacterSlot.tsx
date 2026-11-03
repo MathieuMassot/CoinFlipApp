@@ -9,8 +9,7 @@ type Props = {
   onOpen: () => void; // appui court : ouvrir le détail
   onLaunch: () => void; // double appui : lancer
   onRemove: () => void; // appui long : retirer du board
-  badge?: ReactNode; // sous le personnage : force, cartes à piocher…
-  overlay?: ReactNode; // par-dessus, en haut à gauche (ex. « Fin de tour »)
+  badge?: ReactNode; // sous le personnage (absent : pas de texte sous lui)
   children: ReactNode; // l'illustration
 };
 
@@ -22,10 +21,10 @@ const CharacterSlot = ({
   onLaunch,
   onRemove,
   badge,
-  overlay,
   children,
 }: Props) => {
   const tap = useDoubleTap(onOpen, onLaunch);
+  const hasBadge = badge !== undefined;
 
   // Toujours branché, même sur une silhouette : sinon, au relâchement,
   // l'appui long retire le personnage puis est pris pour un appui qui le repose
@@ -44,13 +43,16 @@ const CharacterSlot = ({
     >
       <View style={{ width: size, height: size }}>
         {children}
-        {present && overlay ? (
-          <View style={styles.overlay}>{overlay}</View>
-        ) : null}
+        {/* Sans zone de texte dessous, « Poser » se superpose en bas du personnage */}
+        {!present && !hasBadge && (
+          <Text style={styles.hintOverlay}>Poser</Text>
+        )}
       </View>
-      <View style={styles.badge}>
-        {present ? badge : <Text style={styles.hint}>Poser</Text>}
-      </View>
+      {hasBadge && (
+        <View style={styles.badge}>
+          {present ? badge : <Text style={styles.hint}>Poser</Text>}
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -58,7 +60,15 @@ const CharacterSlot = ({
 const styles = StyleSheet.create({
   badge: { minHeight: 28, alignItems: 'center', justifyContent: 'center' },
   hint: { color: '#6c6c88', fontSize: 12 },
-  overlay: { position: 'absolute', top: 0, left: 0 },
+  hintOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    textAlign: 'center',
+    color: '#6c6c88',
+    fontSize: 12,
+  },
 });
 
 export default CharacterSlot;

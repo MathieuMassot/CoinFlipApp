@@ -100,20 +100,22 @@ describe('Zndrsplt', () => {
 });
 
 describe('Yusri', () => {
-  it('3 réussites et 2 échecs : 3 cartes et 4 PV perdus', () => {
+  it('3 réussites et 2 échecs : 3 cartes de Yusri et 4 PV perdus', () => {
     const s = play(newGame(), [win, win, win, lose, lose], 'yusri');
     expect(s.stats.cardsYusri).toBe(3);
     expect(s.stats.lifeLost).toBe(4);
-    expect(s.pendingDraws).toBe(3);
+    expect(s.pendingDraws).toBe(0); // sans le Z, rien à piocher sous lui
   });
 
-  it('les cartes de Yusri et de Zndrsplt se cumulent', () => {
+  it('les cartes de Yusri ne s’ajoutent pas au compteur du Z', () => {
     const s = play(
       setBoard(newGame(), { zndrsplt: true }),
       [win, win, lose],
       'yusri',
     );
-    expect(s.pendingDraws).toBe(4);
+    expect(s.stats.cardsYusri).toBe(2);
+    expect(s.stats.cardsZndrsplt).toBe(2);
+    expect(s.pendingDraws).toBe(2); // seulement celles du Z
   });
 });
 
