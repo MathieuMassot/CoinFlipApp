@@ -2,6 +2,14 @@ import React, { ReactNode, useRef } from 'react';
 import { Animated, PanResponder } from 'react-native';
 import { stepHaptic } from '../haptics';
 
+// Mets true pour voir les événements du geste dans les journaux (npx react-native log-android)
+const DEBUG = false;
+const log = (...args: unknown[]) => {
+  if (DEBUG) {
+    console.log('YusriDrag', ...args);
+  }
+};
+
 const DEFAULT_STEP = 26; // dp de glissement vertical par pièce, si le parent n'en donne pas
 const MIN_COINS = 1;
 const MAX_COINS = 5;
@@ -13,6 +21,9 @@ type Props = {
   onChange: (count: number) => void;
   enabled: boolean; // faux : Yusri n'est pas sur le board
   step?: number; // dp de glissement par pièce : plus petit = plus sensible
+  // Vrai quand rien d'autre n'a besoin des appuis sur Yusri (le détail) : le glissement
+  // prend le geste dès que le doigt se pose, au lieu d'attendre un mouvement.
+  claimTouch?: boolean;
   children: ReactNode;
 };
 
@@ -22,6 +33,7 @@ const YusriDrag = ({
   onChange,
   enabled,
   step = DEFAULT_STEP,
+  claimTouch = false,
   children,
 }: Props) => {
   const lift = useRef(new Animated.Value(0)).current;
@@ -33,12 +45,15 @@ const YusriDrag = ({
   const enabledRef = useRef(enabled);
   const onChangeRef = useRef(onChange);
   const stepRef = useRef(step);
+  const claimRef = useRef(claimTouch);
   countRef.current = count;
   enabledRef.current = enabled;
   onChangeRef.current = onChange;
   stepRef.current = step;
+  claimRef.current = claimTouch;
 
   const release = () => {
+    log('release');
     Animated.spring(lift, {
       toValue: 0,
       friction: 5,
@@ -49,13 +64,27 @@ const YusriDrag = ({
 
   const responder = useRef(
     PanResponder.create({
-      // « Capture » : prend le geste même si un appui est déjà en cours sur Yusri.
-      // Il faut un mouvement nettement vertical, pour ne pas gêner le balayage de page.
-      onMoveShouldSetPanResponderCapture: (_e, g) =>
-        enabledRef.current &&
-        Math.abs(g.dy) > 8 &&
-        Math.abs(g.dy) > Math.abs(g.dx) * 1.5,
+      // Détail : le glissement prend le geste dès le toucher.
+      onStartShouldSetPanResponder: () => {
+        log('start?', claimRef.current, enabledRef.current);
+        return claimRef.current && enabledRef.current;
+      },
+      onMoveShouldSetPanResponder: () =>
+        claimRef.current && enabledRef.current,
+      // Écran principal : un appui est déjà en cours sur Yusri (ouvrir, lancer, retirer).
+      // « Capture » : on prend le geste s'il est nettement vertical, sans gêner
+      // le balayage de page.
+      onMoveShouldSetPanResponderCapture: (_e, g) => {
+        log('capture?', enabledRef.current, Math.round(g.dx), Math.round(g.dy));
+        return (
+          !claimRef.current &&
+          enabledRef.current &&
+          Math.abs(g.dy) > 8 &&
+          Math.abs(g.dy) > Math.abs(g.dx) * 1.5
+        );
+      },
       onPanResponderGrant: () => {
+        log('grant');
         start.current = countRef.current;
         last.current = countRef.current;
       },
@@ -67,6 +96,7 @@ const YusriDrag = ({
         );
         if (next !== last.current) {
           last.current = next;
+          log('count', next);
           stepHaptic();
           onChangeRef.current(next);
         }

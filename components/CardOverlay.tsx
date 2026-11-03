@@ -30,7 +30,11 @@ const CardOverlay = ({ visible, onClose, children }: Props) => {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <View style={styles.backdrop}>
+        {/* Le fond qui ferme la carte est un voisin placé derrière le contenu, et non
+            son parent : rien n'enveloppe le contenu, donc ses gestes (comme le
+            glissement de Yusri) ne sont pas volés. */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <Animated.View
           style={[
             styles.content,
@@ -38,10 +42,9 @@ const CardOverlay = ({ visible, onClose, children }: Props) => {
             { transform: [{ scale }] },
           ]}
         >
-          {/* capte les appuis : toucher le contenu ne le ferme pas */}
-          <View onStartShouldSetResponder={() => true}>{children}</View>
+          {children}
         </Animated.View>
-      </Pressable>
+      </View>
     </Modal>
   );
 };

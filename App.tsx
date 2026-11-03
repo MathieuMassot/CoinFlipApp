@@ -34,7 +34,7 @@ import {
   doublingsFromFlip,
   okaunProgression,
 } from './game';
-import { loseHaptic, stepHaptic } from './haptics';
+import { loseHaptic } from './haptics';
 import { useGame } from './useGame';
 import { useReveal } from './useReveal';
 import { useSounds } from './useSounds';
@@ -52,6 +52,8 @@ const THUMB_L = 72; // taille du Pouce en paysage
 // Sensibilité du glissement de Yusri : part de sa taille nécessaire pour une pièce
 // (plus petit = plus sensible ; 0.15 très sensible, 0.21 normal, 0.30 plus lent)
 const COIN_STEP = 0.30;
+// Dans le détail, Yusri est grand mais l'écran ne grandit pas : distance fixe par pièce
+const DETAIL_STEP = 38;
 
 const CoinFlipApp = () => {
   useKeepAwake();
@@ -204,14 +206,6 @@ const CoinFlipApp = () => {
           react?.(f, i, flips);
         },
       );
-    }
-  };
-
-  // Change le nombre de pièces de Yusri (de 1 à 5), avec une petite vibration
-  const changeCoins = (n: number) => {
-    if (n >= 1 && n <= 5 && n !== yusriCount) {
-      stepHaptic();
-      setYusriCount(n);
     }
   };
 
@@ -469,7 +463,8 @@ const CoinFlipApp = () => {
               count={yusriCount}
               onChange={setYusriCount}
               enabled={board.yusri}
-              step={artBig * COIN_STEP}
+              step={DETAIL_STEP}
+              claimTouch
             >
               <YusriArt
                 size={artBig}
@@ -479,21 +474,6 @@ const CoinFlipApp = () => {
             </YusriDrag>
           }
         >
-          {/* Réglage précis des pièces (le glissement sur Yusri marche aussi) */}
-          <View style={styles.coinsRow}>
-            <Text style={styles.line}>Pièces</Text>
-            <SmallButton
-              title="−"
-              onPress={() => changeCoins(yusriCount - 1)}
-              disabled={yusriCount <= 1}
-            />
-            <Text style={styles.coinsCount}>{yusriCount}</Text>
-            <SmallButton
-              title="+"
-              onPress={() => changeCoins(yusriCount + 1)}
-              disabled={yusriCount >= 5}
-            />
-          </View>
           <Text style={styles.line}>
             Automutilation : {game.stats.lifeLost} PV
           </Text>
@@ -510,7 +490,7 @@ const CoinFlipApp = () => {
       >
         <CharacterDetail
           title="Okaun"
-          artSize={ART_BIG}
+          artSize={artBig}
           art={<OkaunArt size={artBig} present={board.okaun} />}
         >
           <OkaunPanel
@@ -525,7 +505,7 @@ const CoinFlipApp = () => {
       <CardOverlay visible={overlay === 'z'} onClose={() => setOverlay(null)}>
         <CharacterDetail
           title="Zndrsplt"
-          artSize={ART_BIG}
+          artSize={artBig}
           art={<ZndrspltArt size={artBig} present={board.zndrsplt} />}
         >
           <Text style={styles.zNumber}>{shownDraws}</Text>
@@ -644,14 +624,6 @@ const styles = StyleSheet.create({
   zNumber: { color: '#ffffff', fontSize: 56, fontWeight: 'bold' },
   line: { color: '#bdc3c7', fontSize: 15 },
   pageStatsL: { flex: 1, padding: 4 },
-  coinsRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  coinsCount: {
-    color: '#ffffff',
-    fontSize: 22,
-    fontWeight: 'bold',
-    minWidth: 20,
-    textAlign: 'center',
-  },
 });
 
 const App = () => (
