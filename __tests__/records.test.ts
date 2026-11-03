@@ -39,4 +39,15 @@ describe('records', () => {
   it('renvoie null sans aucune partie', () => {
     expect(averageStats([])).toBeNull();
   });
+
+  it('additionne les sauvetages du Pouce', () => {
+    const save: Flip = { result: 'Win', coins: ['Lose', 'Win'] };
+    const r = endGame(
+      recordFlips(newGame(), [save, save], { player: 'me', source: 'manual' }),
+      1,
+    );
+    expect(totalStats([r, r]).thumbSaves).toBe(4);
+    expect(averageStats([r, r])?.thumbSaves).toBe(2);
+  });
+  
 });

@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Switch,
   Text,
   TouchableOpacity,
   View,
-  StatusBar,
 } from 'react-native';
 import { useKeepAwake } from '@sayem314/react-native-keep-awake';
 import {
@@ -15,24 +15,24 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 import CardOverlay from './components/CardOverlay';
+import CharacterDetail from './components/CharacterDetail';
+import CharacterSlot from './components/CharacterSlot';
 import LastFlips from './components/LastFlips';
+import NumberPad from './components/NumberPad';
 import OkaunPanel from './components/OkaunPanel';
+import SlotReel from './components/SlotReel';
 import SmallButton from './components/SmallButton';
 import StatsPage from './components/StatsPage';
+import OkaunArt from './components/characters/OkaunArt';
+import PouceDeKrark, { PouceEtat } from './components/characters/PouceDeKrark';
+import YusriArt, { YusriEtat } from './components/characters/YusriArt';
+import ZndrspltArt from './components/characters/ZndrspltArt';
 import { Flip } from './flip';
-import SlotReel from './components/SlotReel';
-import { loseHaptic } from './haptics';
 import { GameEvent, okaunProgression } from './game';
-import { useSounds } from './useSounds';
+import { loseHaptic } from './haptics';
 import { useGame } from './useGame';
 import { useReveal } from './useReveal';
-import CharacterSlot from './components/CharacterSlot';
-import OkaunArt from './components/characters/OkaunArt';
-import ZndrspltArt from './components/characters/ZndrspltArt';
-import YusriArt, { YusriEtat } from './components/characters/YusriArt';
-import PouceDeKrark, { PouceEtat } from './components/characters/PouceDeKrark';
-import CharacterDetail from './components/CharacterDetail';
-import NumberPad from './components/NumberPad';
+import { useSounds } from './useSounds';
 
 type Overlay = 'z' | 'okaun' | 'yusri' | null;
 
@@ -50,14 +50,27 @@ const CoinFlipApp = () => {
     pendingEvents.current.push(...events);
   }, []);
   const g = useGame({ onBeforeChange: skip, onEvents: queueEvents });
+
   const [yusriCount, setYusriCount] = useState(5);
   const [countText, setCountText] = useState('1');
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [page, setPage] = useState(0);
   const [overlay, setOverlay] = useState<Overlay>(null);
-  const count = Math.max(0, parseInt(countText, 10) || 0);
-
   const [padOpen, setPadOpen] = useState(false);
+  const [gains, setGains] = useState(0); // réussites de la série en cours
+  const [yusri, setYusri] = useState<{ etat: YusriEtat; declencheur: number }>({
+    etat: 'repos',
+    declencheur: 0,
+  });
+  const [streak, setStreak] = useState({ wins: 0, losses: 0 });
+  const [thumb, setThumb] = useState<{
+    etat: PouceEtat;
+    declencheur: number;
+    frappes: 1 | 2;
+    suite?: PouceEtat; // état à jouer quand celui-ci se termine
+  }>({ etat: 'repos', declencheur: 0, frappes: 1 });
+
+  const count = Math.max(0, parseInt(countText, 10) || 0);
 
   // Les sons attendent la fin du dévoilement (ou son annulation)
   useEffect(() => {
@@ -70,26 +83,20 @@ const CoinFlipApp = () => {
     }
   });
 
-    // Marges pour ne pas passer sous l'heure, l'appareil photo ou la barre de navigation
+  // Quand le dévoilement se termine (ou est sauté), le Pouce reprend sa taille
+  useEffect(() => {
+    if (!reveal) {
+      setGains(0);
+    }
+  }, [reveal]);
+
+  // Marges pour ne pas passer sous l'heure, l'appareil photo ou la barre de navigation
   const safeStyle = {
     paddingTop: insets.top,
     paddingBottom: insets.bottom + 8,
     paddingLeft: insets.left,
     paddingRight: insets.right,
   };
-
-  const [yusri, setYusri] = useState<{ etat: YusriEtat; declencheur: number }>({
-    etat: 'repos',
-    declencheur: 0,
-  });
-  const [streak, setStreak] = useState({ wins: 0, losses: 0 });
-
-  const [thumb, setThumb] = useState<{
-    etat: PouceEtat;
-    declencheur: number;
-    frappes: 1 | 2;
-    suite?: PouceEtat; // état à jouer quand celui-ci se termine
-  }>({ etat: 'repos', declencheur: 0, frappes: 1 });
 
   if (!g.loaded) {
     return (
@@ -113,6 +120,23 @@ const CoinFlipApp = () => {
       ? reveal.steps[Math.min(reveal.count, reveal.steps.length) - 1]
       : game.okaunNow;
 
+  // Série d'Okaun ou du Z : le Pouce grossit à chaque réussite,
+  // et s'affaisse si la série commence directement par un Lose
+  const reactSerie = (flip: Flip, index: number) => {
+    if (flip.result === 'Win') {
+      setGains(index + 1);
+      return;
+    }
+    setGains(0);
+    if (index === 0) {
+      setThumb(t => ({
+        etat: 'defaite',
+        declencheur: t.declencheur + 1,
+        frappes: 1,
+      }));
+    }
+  };
+
   // Lance une série puis la dévoile lancer par lancer
   const launch = (
     run: () => Flip[],
@@ -125,10 +149,23 @@ const CoinFlipApp = () => {
         flips.length,
         board.okaun ? okaunProgression(before, flips) : null,
         i => {
-          if (flips[i].result === 'Lose') {
+          const f = flips[i];
+          if (f.result === 'Lose') {
             loseHaptic();
           }
-          react?.(flips[i], i, flips);
+          if (
+            f.result === 'Win' &&
+            f.coins.length > 1 &&
+            f.coins.includes('Lose')
+          ) {
+            // le Pouce a sauvé ce lancer
+            setThumb(t => ({
+              etat: 'sauvetage',
+              declencheur: t.declencheur + 1,
+              frappes: 1,
+            }));
+          }
+          react?.(f, i, flips);
         },
       );
     }
@@ -207,6 +244,7 @@ const CoinFlipApp = () => {
             />
           </View>
         </View>
+
         <View style={styles.triangleRow}>
           <CharacterSlot
             size={ART}
@@ -214,13 +252,14 @@ const CoinFlipApp = () => {
             onPlace={() => g.toggleBoard('zndrsplt')}
             onRemove={() => g.toggleBoard('zndrsplt')}
             onOpen={() => setOverlay('z')}
-            onLaunch={() => launch(g.launchZ)}
+            onLaunch={() => launch(g.launchZ, reactSerie)}
             badge={
               <Text style={styles.big}>À piocher : {game.pendingDraws}</Text>
             }
           >
             <ZndrspltArt size={ART} present={board.zndrsplt} />
           </CharacterSlot>
+
           <TouchableOpacity
             style={styles.thumb}
             activeOpacity={0.85}
@@ -232,6 +271,7 @@ const CoinFlipApp = () => {
               etat={thumb.etat}
               declencheur={thumb.declencheur}
               nombreFrappes={thumb.frappes}
+              gains={gains}
               onAnimationFin={() =>
                 setThumb(t =>
                   t.suite
@@ -246,13 +286,14 @@ const CoinFlipApp = () => {
             />
             <Text style={styles.thumbLabel}>Pouce</Text>
           </TouchableOpacity>
+
           <CharacterSlot
             size={ART}
             present={board.okaun}
             onPlace={() => g.toggleBoard('okaun')}
             onRemove={() => g.toggleBoard('okaun')}
             onOpen={() => setOverlay('okaun')}
-            onLaunch={() => launch(g.launchOkaun)}
+            onLaunch={() => launch(g.launchOkaun, reactSerie)}
             badge={
               <Text style={styles.big} numberOfLines={1} adjustsFontSizeToFit>
                 {okaunShown.power}/{okaunShown.toughness}
@@ -338,7 +379,10 @@ const CoinFlipApp = () => {
         )}
       </ScrollView>
 
-      <CardOverlay visible={overlay === 'yusri'} onClose={() => setOverlay(null)}>
+      <CardOverlay
+        visible={overlay === 'yusri'}
+        onClose={() => setOverlay(null)}
+      >
         <CharacterDetail
           title="Yusri"
           artSize={ART_BIG}
@@ -360,7 +404,10 @@ const CoinFlipApp = () => {
         </CharacterDetail>
       </CardOverlay>
 
-      <CardOverlay visible={overlay === 'okaun'} onClose={() => setOverlay(null)}>
+      <CardOverlay
+        visible={overlay === 'okaun'}
+        onClose={() => setOverlay(null)}
+      >
         <CharacterDetail
           title="Okaun"
           artSize={ART_BIG}
@@ -392,7 +439,8 @@ const CoinFlipApp = () => {
           />
         </CharacterDetail>
       </CardOverlay>
-            <CardOverlay visible={padOpen} onClose={() => setPadOpen(false)}>
+
+      <CardOverlay visible={padOpen} onClose={() => setPadOpen(false)}>
         <View style={styles.padCard}>
           <NumberPad
             title="Nombre de lancers"
@@ -422,6 +470,13 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   label: { color: '#ecf0f1', fontSize: 15, fontWeight: 'bold' },
   triangle: { flex: 1, alignItems: 'center', justifyContent: 'space-evenly' },
+  yusriRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  yusriSide: { width: 60, alignItems: 'center' },
   triangleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -430,8 +485,12 @@ const styles = StyleSheet.create({
   },
   thumb: { alignItems: 'center' },
   thumbLabel: { color: '#ecf0f1', fontSize: 12, fontWeight: 'bold' },
-  big: { color: '#ecf0f1', fontSize: 17, fontWeight: 'bold', textAlign: 'center' },
-  hintSmall: { color: '#7f8c8d', fontSize: 10, marginTop: 2 },
+  big: {
+    color: '#ecf0f1',
+    fontSize: 17,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
   freeBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -456,17 +515,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dots: { color: '#7f8c8d', textAlign: 'center', fontSize: 12 },
-  zPanel: { alignItems: 'center', gap: 10 },
-  overlayTitle: { color: '#ecf0f1', fontSize: 20, fontWeight: 'bold' },
   zNumber: { color: '#ffffff', fontSize: 56, fontWeight: 'bold' },
   line: { color: '#bdc3c7', fontSize: 15 },
-    yusriRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  yusriSide: { width: 60, alignItems: 'center' },
 });
 
 const App = () => (

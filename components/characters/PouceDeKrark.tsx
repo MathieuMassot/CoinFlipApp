@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { T, hold, seq } from './animation';
+import Reactif from './Reactif';
 import Layer from './Layer';
 
 const ASSETS = {
@@ -21,6 +22,7 @@ const ASSETS = {
 
 // ───── Réglages, faciles à ajuster ─────
 const SILHOUETTE = '#272738';
+const FLASH = '#f1c40f'; // éclair doré du sauvetage
 
 // Pivots, en % du carré 1024 (transformOrigin)
 const PIVOT = {
@@ -43,7 +45,13 @@ const REARM = 160; // réarmement entre deux frappes
 const RETURN_MS = 400; // retour
 const SPRING = { damping: 8, stiffness: 120 };
 
-export type PouceEtat = 'repos' | 'lancer' | 'choix' | 'victoire' | 'defaite';
+export type PouceEtat =
+  | 'repos'
+  | 'lancer'
+  | 'choix'
+  | 'victoire'
+  | 'defaite'
+  | 'sauvetage';
 
 // Valeurs animées par les états, et leur valeur de repos
 const REPOS = {
@@ -53,6 +61,7 @@ const REPOS = {
   scale: 1,
   opacity: 1,
   idleAmp: 1, // 1 : le pendule de repos s'applique, 0 : il est en pause
+  flash: 0, // opacité de l'éclair doré
 };
 
 type Cle = keyof typeof REPOS;
@@ -102,6 +111,11 @@ const jouerEtat = (
       v.idleAmp.value = T(0, 200);
       return null;
 
+    case 'sauvetage': // ~280 ms : gonflement discret et éclair doré
+      v.scale.value = seq([T(1.12, 110), T(1, 170)]);
+      v.flash.value = seq([T(0.75, 90), T(0, 190)]);
+      return 280;
+
     case 'victoire': // ~1200 ms
       v.lift.value = seq([T(-20, 150), withSpring(0, { damping: 6, stiffness: 150 })]);
       v.thumbRot.value = seq([
@@ -143,6 +157,7 @@ type Props = {
   cote?: 'gauche' | 'droite'; // pour l'état 'choix'
   onFrappe?: () => void; // au début de chaque frappe
   onAnimationFin?: () => void; // quand un état se termine (sauf 'choix')
+  gains?: number; // réussites de la série en cours (grossissement)
 };
 
 const PouceDeKrark = ({
@@ -154,6 +169,7 @@ const PouceDeKrark = ({
   cote = 'gauche',
   onFrappe,
   onAnimationFin,
+  gains = 0,
 }: Props) => {
   const m = size / REF;
 
@@ -165,6 +181,7 @@ const PouceDeKrark = ({
     scale: useSharedValue(REPOS.scale),
     opacity: useSharedValue(REPOS.opacity),
     idleAmp: useSharedValue(REPOS.idleAmp),
+    flash: useSharedValue(REPOS.flash),
   };
 
   // Boucles de repos
@@ -244,14 +261,25 @@ const PouceDeKrark = ({
     ],
   }));
 
+  const flashStyle = useAnimatedStyle(() => ({ opacity: v.flash.value }));
+
   const tint = present ? undefined : SILHOUETTE;
 
   return (
     <View style={{ width: size, height: size }}>
-      <Animated.View style={[styles.fill, pendulumStyle]}>
-        <Layer source={ASSETS.chain} tint={tint} />
-        <Layer source={ASSETS.thumb} tint={tint} style={thumbStyle} />
-      </Animated.View>
+      <Reactif gains={gains} actif={present} pivot={PIVOT.pendulum}>
+        <Animated.View style={[styles.fill, pendulumStyle]}>
+          <Layer source={ASSETS.chain} tint={tint} />
+          <Layer source={ASSETS.thumb} tint={tint} style={thumbStyle} />
+          {present && (
+            <Layer
+              source={ASSETS.thumb}
+              tint={FLASH}
+              style={[thumbStyle, flashStyle]}
+            />
+          )}
+        </Animated.View>
+      </Reactif>
     </View>
   );
 };

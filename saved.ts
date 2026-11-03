@@ -17,6 +17,11 @@ export const defaultSaved = (): Saved => ({
 
 export const serializeSaved = (saved: Saved): string => JSON.stringify(saved);
 
+const fixStats = <T extends { thumbSaves?: number }>(stats: T) => ({
+  ...stats,
+  thumbSaves: stats.thumbSaves ?? 0,
+});
+
 // Absente, illisible ou d'une autre version : on repart de zéro
 export const parseSaved = (raw: string | null): Saved => {
   if (raw === null) {
@@ -35,7 +40,17 @@ export const parseSaved = (raw: string | null): Saved => {
     ) {
       return {
         ...data,
-        game: { ...data.game, lastSeries: data.game.lastSeries ?? [] },
+        game: {
+          ...data.game,
+          lastSeries: data.game.lastSeries ?? [],
+          stats: fixStats(data.game.stats),
+        },
+        records: data.records.map(
+          (r: { stats: { thumbSaves?: number } }) => ({
+            ...r,
+            stats: fixStats(r.stats),
+          }),
+        ),
       } as Saved;
     }
   } catch {

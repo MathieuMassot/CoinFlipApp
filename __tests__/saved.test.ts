@@ -37,4 +37,10 @@ describe('saved', () => {
     delete raw.game.lastSeries;
     expect(parseSaved(JSON.stringify(raw)).game.lastSeries).toEqual([]);
   });
+
+  it('accepte une ancienne sauvegarde sans sauvetages du Pouce', () => {
+    const raw = JSON.parse(serializeSaved(defaultSaved()));
+    delete raw.game.stats.thumbSaves;
+    expect(parseSaved(JSON.stringify(raw)).game.stats.thumbSaves).toBe(0);
+  });
 });

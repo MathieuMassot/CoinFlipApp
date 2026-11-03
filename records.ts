@@ -21,6 +21,7 @@ export const totalStats = (records: GameRecord[]): GameStats =>
         withoutThumb: t.losses.withoutThumb + s.losses.withoutThumb,
       },
       lifeLost: t.lifeLost + s.lifeLost,
+      thumbSaves: t.thumbSaves + s.thumbSaves,
       cardsYusri: t.cardsYusri + s.cardsYusri,
       cardsZndrsplt: t.cardsZndrsplt + s.cardsZndrsplt,
       okaunMax: {
@@ -50,6 +51,7 @@ export const averageStats = (records: GameRecord[]): GameStats | null => {
       withoutThumb: avg(s => s.losses.withoutThumb),
     },
     lifeLost: avg(s => s.lifeLost),
+    thumbSaves: avg(s => s.thumbSaves),
     cardsYusri: avg(s => s.cardsYusri),
     cardsZndrsplt: avg(s => s.cardsZndrsplt),
     okaunMax: {

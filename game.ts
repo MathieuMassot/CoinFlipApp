@@ -30,6 +30,7 @@ export type Turn = {
 export type GameStats = {
   wins: { withThumb: number; withoutThumb: number };
   losses: { withThumb: number; withoutThumb: number };
+  thumbSaves: number; // Win obtenus grâce au Pouce (W+L ou L+W)
   lifeLost: number; // PV perdus à cause de Yusri
   cardsYusri: number;
   cardsZndrsplt: number;
@@ -59,6 +60,7 @@ const emptyTurn = (number: number, mine: boolean): Turn => ({
 export const emptyStats = (): GameStats => ({
   wins: { withThumb: 0, withoutThumb: 0 },
   losses: { withThumb: 0, withoutThumb: 0 },
+  thumbSaves: 0,
   lifeLost: 0,
   cardsYusri: 0,
   cardsZndrsplt: 0,
@@ -189,6 +191,9 @@ const recordFlip = (
 
     if (won) {
       stats.wins = { ...stats.wins, [thumbKey]: stats.wins[thumbKey] + 1 };
+      if (flip.coins.length > 1 && flip.coins.includes('Lose')) {
+        stats.thumbSaves += 1; // le Pouce a sauvé ce lancer
+      }
       if (source === 'yusri') {
         stats.cardsYusri += 1;
         draws += 1;

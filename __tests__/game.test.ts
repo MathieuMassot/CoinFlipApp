@@ -121,6 +121,12 @@ describe('Statistiques', () => {
     expect(s.stats.wins).toEqual({ withThumb: 2, withoutThumb: 1 });
     expect(s.stats.losses).toEqual({ withThumb: 1, withoutThumb: 1 });
   });
+  
+  it('compte les sauvetages du Pouce', () => {
+    const bothWin: Flip = { result: 'Win', coins: ['Win', 'Win'] };
+    const s = play(newGame(), [thumbWin, bothWin, thumbWin, thumbLose, win]);
+    expect(s.stats.thumbSaves).toBe(2);
+  });
 });
 
 describe('Tours', () => {

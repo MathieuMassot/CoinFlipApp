@@ -131,10 +131,10 @@ const StatsPage = ({
           <Text style={styles.lose}>{fmtBig(s.losses.withoutThumb)}</Text>
         </Line>
         <Line label="Avec Pouce">
-          <Text style={styles.win}>{fmtBig(s.wins.withThumb)}</Text> /{' '}
-          <Text style={styles.lose}>{fmtBig(s.losses.withThumb)}</Text>
+          <Text style={styles.win}>{fmt(s.wins.withThumb)}</Text> /{' '}
+          <Text style={styles.lose}>{fmt(s.losses.withThumb)}</Text>
         </Line>
-        <Text style={styles.hint}>réussites / échecs</Text>
+        <Line label="Sauvetages du Pouce">{fmtBig(s.thumbSaves)}</Line>
       </StatCard>
 
       <StatCard side="right" art={<YusriArt size={ART} present />}>
@@ -148,7 +148,6 @@ const StatsPage = ({
 
       <StatCard side="right" art={<OkaunArt size={ART} present />}>
         <Line label="Chaos d'Okaun">{fmtBig(s.okaunMax.power)}</Line>
-        <Text style={styles.hint}>force maximale atteinte</Text>
       </StatCard>
 
       <View style={styles.actions}>
@@ -239,7 +238,6 @@ const styles = StyleSheet.create({
   value: { color: '#ffffff', fontSize: 16, fontWeight: 'bold', flexShrink: 0 },
   win: { color: '#2ecc71' },
   lose: { color: '#e74c3c' },
-  hint: { color: '#6c7a89', fontSize: 11 },
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
