@@ -36,3 +36,13 @@ export const gazeSequence = (plan: GazeStep[], axis: 'x' | 'y') =>
       withDelay(step.rest, withTiming(step[axis], { duration: 0 })),
     ]),
   );
+
+  type Ease = (t: number) => number;
+
+// Un mouvement jusqu'à `to` en `duration` ms
+export const T = (to: number, duration: number, easing?: Ease) =>
+  withTiming(to, easing ? { duration, easing } : { duration });
+
+// Reste à cette valeur pendant ms millisecondes
+export const hold = (ms: number, value: number) =>
+  withDelay(ms, withTiming(value, { duration: 0 }));

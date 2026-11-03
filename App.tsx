@@ -30,6 +30,7 @@ import CharacterSlot from './components/CharacterSlot';
 import OkaunArt from './components/characters/OkaunArt';
 import ZndrspltArt from './components/characters/ZndrspltArt';
 import YusriArt, { YusriEtat } from './components/characters/YusriArt';
+import PouceDeKrark, { PouceEtat } from './components/characters/PouceDeKrark';
 import CharacterDetail from './components/CharacterDetail';
 import NumberPad from './components/NumberPad';
 
@@ -37,6 +38,7 @@ type Overlay = 'z' | 'okaun' | 'yusri' | null;
 
 const ART = 124; // taille d'affichage des personnages
 const ART_BIG = 230; // taille dans le détail
+const THUMB = 84; // taille du Pouce, entre le Z et Okaun
 
 const CoinFlipApp = () => {
   useKeepAwake();
@@ -76,11 +78,18 @@ const CoinFlipApp = () => {
     paddingRight: insets.right,
   };
 
-    const [yusri, setYusri] = useState<{ etat: YusriEtat; declencheur: number }>({
+  const [yusri, setYusri] = useState<{ etat: YusriEtat; declencheur: number }>({
     etat: 'repos',
     declencheur: 0,
   });
   const [streak, setStreak] = useState({ wins: 0, losses: 0 });
+
+  const [thumb, setThumb] = useState<{
+    etat: PouceEtat;
+    declencheur: number;
+    frappes: 1 | 2;
+    suite?: PouceEtat; // état à jouer quand celui-ci se termine
+  }>({ etat: 'repos', declencheur: 0, frappes: 1 });
 
   if (!g.loaded) {
     return (
@@ -212,13 +221,31 @@ const CoinFlipApp = () => {
           >
             <ZndrspltArt size={ART} present={board.zndrsplt} />
           </CharacterSlot>
-          <View style={styles.thumb}>
-            <Text style={styles.thumbLabel}>Pouce</Text>
-            <Switch
-              value={board.thumb}
-              onValueChange={() => g.toggleBoard('thumb')}
+          <TouchableOpacity
+            style={styles.thumb}
+            activeOpacity={0.85}
+            onPress={() => g.toggleBoard('thumb')}
+          >
+            <PouceDeKrark
+              size={THUMB}
+              present={board.thumb}
+              etat={thumb.etat}
+              declencheur={thumb.declencheur}
+              nombreFrappes={thumb.frappes}
+              onAnimationFin={() =>
+                setThumb(t =>
+                  t.suite
+                    ? {
+                        etat: t.suite,
+                        declencheur: t.declencheur + 1,
+                        frappes: 1,
+                      }
+                    : { ...t, etat: 'repos' },
+                )
+              }
             />
-          </View>
+            <Text style={styles.thumbLabel}>Pouce</Text>
+          </TouchableOpacity>
           <CharacterSlot
             size={ART}
             present={board.okaun}

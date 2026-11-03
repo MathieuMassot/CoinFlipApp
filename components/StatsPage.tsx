@@ -3,6 +3,7 @@ import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import OkaunArt from './characters/OkaunArt';
 import ZndrspltArt from './characters/ZndrspltArt';
 import YusriArt from './characters/YusriArt';
+import PouceDeKrark from './characters/PouceDeKrark';
 import SmallButton from './SmallButton';
 import { GameState, emptyStats } from '../game';
 import { GameRecord, averageStats, endGame, totalStats } from '../records';
@@ -43,13 +44,6 @@ const fmtBig = (n: number): string => {
 };
 
 const cards = (n: number) => `${fmtBig(n)} carte${n >= 2 ? 's' : ''}`;
-
-// En attendant les visuels du Pouce et de Yusri
-const Placeholder = ({ label }: { label: string }) => (
-  <View style={styles.placeholder}>
-    <Text style={styles.placeholderText}>{label}</Text>
-  </View>
-);
 
 type CardProps = {
   side: 'left' | 'right';
@@ -131,7 +125,7 @@ const StatsPage = ({
         {tab === 'average' && 'Moyenne par partie'}
       </Text>
 
-      <StatCard side="left" art={<Placeholder label="Pouce" />}>
+      <StatCard side="left" art={<PouceDeKrark size={ART} present />}>
         <Line label="Sans Pouce">
           <Text style={styles.win}>{fmtBig(s.wins.withoutThumb)}</Text> /{' '}
           <Text style={styles.lose}>{fmtBig(s.losses.withoutThumb)}</Text>
