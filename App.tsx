@@ -72,8 +72,6 @@ const CoinFlipApp = () => {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [padOpen, setPadOpen] = useState(false);
   const [gains, setGains] = useState(0); // réussites de la série en cours
-  // Position verticale des deux rangées du triangle, pour centrer le Pouce
-  const [rowY, setRowY] = useState({ top: 0, bottom: 0 });
   const [yusri, setYusri] = useState<{ etat: YusriEtat; declencheur: number }>({
     etat: 'repos',
     declencheur: 0,
@@ -152,10 +150,6 @@ const CoinFlipApp = () => {
   const shownDoublings =
     turn.doublings -
     unrevealed.reduce((n, f) => n + doublingsFromFlip(f), 0);
-
-  // Le Pouce est au centre de gravité du triangle formé par les trois personnages
-  const thumbTop =
-    (rowY.top + art / 2 + 2 * (rowY.bottom + art / 2)) / 3 - thumbPx / 2;
 
   // Série d'Okaun ou du Z : le Pouce grossit à chaque réussite,
   // et s'affaisse si la série commence directement par un Lose
@@ -252,10 +246,9 @@ const CoinFlipApp = () => {
 
   const triangle = (
     <View style={styles.triangle}>
-      <View
-        style={styles.yusriRow}
-        onLayout={e => setRowY(r => ({ ...r, top: e.nativeEvent.layout.y }))}
-      >
+      <View style={styles.space3} />
+
+      <View style={styles.yusriRow}>
         <View style={styles.yusriSide} />
         <CharacterSlot
           size={art}
@@ -285,11 +278,46 @@ const CoinFlipApp = () => {
         </View>
       </View>
 
+      <View style={styles.space2} />
+
+      {/* Le Pouce : un point d'ancrage dans la mise en page, au centre de gravité du
+          triangle. Il bouge avec le reste à la rotation, sans mesure ni retard. */}
+      <View
+        style={[
+          styles.thumbAnchor,
+          { height: thumbPx, marginVertical: -thumbPx / 2, top: art / 6 },
+        ]}
+      >
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => g.toggleBoard('thumb')}
+        >
+          <PouceDeKrark
+            size={thumbPx}
+            present={board.thumb}
+            etat={thumb.etat}
+            declencheur={thumb.declencheur}
+            nombreFrappes={thumb.frappes}
+            gains={gains}
+            onAnimationFin={() =>
+              setThumb(t =>
+                t.suite
+                  ? {
+                      etat: t.suite,
+                      declencheur: t.declencheur + 1,
+                      frappes: 1,
+                    }
+                  : { ...t, etat: 'repos' },
+              )
+            }
+          />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.space1} />
+
       <View
         style={[styles.triangleRow, landscape && styles.triangleRowLandscape]}
-        onLayout={e =>
-          setRowY(r => ({ ...r, bottom: e.nativeEvent.layout.y }))
-        }
       >
         <CharacterSlot
           size={art}
@@ -320,39 +348,7 @@ const CoinFlipApp = () => {
         </CharacterSlot>
       </View>
 
-      {/* Le Pouce, au centre du triangle (invisible le temps de mesurer) */}
-      <View
-        style={[
-          styles.thumbWrap,
-          { top: thumbTop },
-          rowY.bottom === 0 && styles.thumbHidden,
-        ]}
-      >
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => g.toggleBoard('thumb')}
-        >
-          <PouceDeKrark
-            size={thumbPx}
-            present={board.thumb}
-            etat={thumb.etat}
-            declencheur={thumb.declencheur}
-            nombreFrappes={thumb.frappes}
-            gains={gains}
-            onAnimationFin={() =>
-              setThumb(t =>
-                t.suite
-                  ? {
-                      etat: t.suite,
-                      declencheur: t.declencheur + 1,
-                      frappes: 1,
-                    }
-                  : { ...t, etat: 'repos' },
-              )
-            }
-          />
-        </TouchableOpacity>
-      </View>
+      <View style={styles.space3} />
     </View>
   );
 
@@ -393,23 +389,19 @@ const CoinFlipApp = () => {
     </View>
   );
 
-  // Portrait : tout s'empile. Paysage : le triangle à gauche, le reste à droite.
-  const mainPage = landscape ? (
-    <View style={[styles.page, styles.pageLandscape]}>
-      <View style={styles.leftCol}>{triangle}</View>
-      <View style={styles.rightCol}>
-        {topBar}
-        {results}
-        {freeBar}
+  // Le même arbre en portrait et en paysage : seul le style change, donc rien
+  // n'est détruit puis recréé à la rotation
+  const mainPage = (
+    <View style={styles.pageMain}>
+      <View style={styles.pageInner}>
+        <View style={landscape ? styles.topBarL : undefined}>{topBar}</View>
+        <View style={landscape ? styles.triangleL : styles.triangleP}>
+          {triangle}
+        </View>
+        <View style={landscape ? styles.resultsL : undefined}>{results}</View>
+        <View style={landscape ? styles.freeBarL : undefined}>{freeBar}</View>
+        {!landscape && <Text style={styles.dots}>{dots}</Text>}
       </View>
-    </View>
-  ) : (
-    <View style={styles.page}>
-      {topBar}
-      {triangle}
-      {results}
-      {freeBar}
-      <Text style={styles.dots}>{dots}</Text>
     </View>
   );
 
@@ -534,9 +526,32 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#14141f' },
   center: { flex: 1, backgroundColor: '#14141f', justifyContent: 'center' },
   page: { flex: 1, padding: 12, gap: 10 },
-  pageLandscape: { flexDirection: 'row', gap: 16 },
-  leftCol: { flex: 1 },
-  rightCol: { flex: 1, justifyContent: 'space-between' },
+    pageMain: { flex: 1, padding: 12 },
+  pageInner: { flex: 1, gap: 10 },
+  // Paysage : le triangle à gauche, le reste à droite
+  triangleP: { flex: 1 },
+  triangleL: { position: 'absolute', top: 0, bottom: 0, left: 0, width: '48%' },
+  topBarL: { position: 'absolute', top: 0, right: 0, width: '48%' },
+  resultsL: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: '48%',
+    justifyContent: 'center',
+    pointerEvents: 'box-none',
+  },
+  freeBarL: { position: 'absolute', bottom: 0, right: 0, width: '48%' },
+  // Espaces du triangle (3 / 2 / 1 / 3) : le Pouce se place par la mise en page
+  space1: { flex: 1 },
+  space2: { flex: 2 },
+  space3: { flex: 3 },
+  thumbAnchor: {
+    width: '100%',
+    alignItems: 'center',
+    zIndex: 2,
+    pointerEvents: 'box-none',
+  },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -557,17 +572,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-  },
-  triangleRowLandscape: { justifyContent: 'space-around' },
-  // Le Pouce flotte au-dessus des rangées sans les bloquer : seul lui reçoit les appuis
-  thumbWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
     pointerEvents: 'box-none',
   },
-  thumbHidden: { opacity: 0 },
+  triangleRowLandscape: { justifyContent: 'space-around' },
   big: {
     color: '#ecf0f1',
     fontSize: 17,
