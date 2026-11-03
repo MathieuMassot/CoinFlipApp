@@ -233,10 +233,12 @@ export type GameEvent =
   | { type: 'thumbSave'; count: number } // le Pouce transforme un échec en réussite
   | { type: 'thumbDoubleFail'; count: number } // deux échecs malgré le Pouce
   | { type: 'okaunMilestone'; threshold: number } // la force d'Okaun dépasse un palier
-  | { type: 'longStreak'; source: 'okaun' | 'zndrsplt'; wins: number };
+  | { type: 'longStreak'; source: 'okaun' | 'zndrsplt'; wins: number }
+  | { type: 'zMilestone'; threshold: number }; // les cartes à piocher dépassent un palier
 
-export const OKAUN_MILESTONES = [50, 100, 500, 1000];
-export const LONG_STREAK = 8;
+export const OKAUN_MILESTONES = [40, 350, 3000, 1000000];
+export const Z_MILESTONES = [5, 10, 25, 50];
+export const LONG_STREAK = 8; //TODO:
 
 const detectEvents = (
   before: GameState,
@@ -275,6 +277,14 @@ const detectEvents = (
         events.push({ type: 'longStreak', source, wins });
       }
     }
+  }
+
+    // Cartes à piocher du Z : seul le palier le plus haut franchi est signalé
+  const crossedZ = Z_MILESTONES.filter(
+    t => before.pendingDraws <= t && after.pendingDraws > t,
+  );
+  if (crossedZ.length > 0) {
+    events.push({ type: 'zMilestone', threshold: Math.max(...crossedZ) });
   }
 
   // Seul le palier le plus haut franchi est signalé

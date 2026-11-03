@@ -185,25 +185,47 @@ describe('Événements', () => {
     expect(events).toContainEqual({ type: 'thumbDoubleFail', count: 2 });
   });
 
-  it('Okaun dépasse 50', () => {
+  it('Okaun dépasse 40', () => {
     const { events } = recordFlipsWithEvents(
       withOkaun(),
       [win, win, win, win, win],
       ctx('okaun'),
     );
-    expect(events).toContainEqual({ type: 'okaunMilestone', threshold: 50 });
+    expect(events).toContainEqual({ type: 'okaunMilestone', threshold: 40 });
   });
 
   it('seul le palier le plus haut franchi est signalé', () => {
+    // 3 × 2⁸ = 768 : franchit 40 et 350 d'un coup
     const { events } = recordFlipsWithEvents(
       withOkaun(),
-      [win, win, win, win, win, win],
+      [win, win, win, win, win, win, win, win],
       ctx('okaun'),
     );
-    expect(events).toContainEqual({ type: 'okaunMilestone', threshold: 100 });
+    expect(events).toContainEqual({ type: 'okaunMilestone', threshold: 350 });
     expect(events).not.toContainEqual({
       type: 'okaunMilestone',
-      threshold: 50,
+      threshold: 40,
+    });
+  });
+
+  it('le Z : un palier de cartes à piocher franchi', () => {
+    const withZ = () => setBoard(newGame(), { zndrsplt: true });
+    const wins = (n: number) => Array.from({ length: n }, () => win);
+
+    // 5 cartes : pas encore « plus de 5 »
+    expect(
+      recordFlipsWithEvents(withZ(), wins(5), ctx('manual')).events,
+    ).toEqual([]);
+
+    const six = recordFlipsWithEvents(withZ(), wins(6), ctx('manual'));
+    expect(six.events).toContainEqual({ type: 'zMilestone', threshold: 5 });
+
+    // 11 cartes : franchit 5 et 10, seul 10 est signalé
+    const eleven = recordFlipsWithEvents(withZ(), wins(11), ctx('manual'));
+    expect(eleven.events).toContainEqual({ type: 'zMilestone', threshold: 10 });
+    expect(eleven.events).not.toContainEqual({
+      type: 'zMilestone',
+      threshold: 5,
     });
   });
 

@@ -40,6 +40,7 @@ import { useReveal } from './useReveal';
 import { useSounds } from './useSounds';
 import CharacterSlot from './components/CharacterSlot';
 import Presence from './components/characters/Presence';
+import { SoundName, soundForEvents } from './sounds';
 
 type Overlay = 'z' | 'okaun' | 'yusri' | null;
 
@@ -99,8 +100,9 @@ const CoinFlipApp = () => {
     if (!reveal && pendingEvents.current.length > 0) {
       const events = pendingEvents.current;
       pendingEvents.current = [];
-      if (events.some(e => e.type === 'yusriJackpot')) {
-        sounds.play('laugh');
+      const sound = soundForEvents(events);
+      if (sound) {
+        sounds.play(sound);
       }
     }
   });
@@ -138,6 +140,14 @@ const CoinFlipApp = () => {
   const { game } = g;
   const { board, turn } = game;
   const addToCount = (n: number) => setCountText(String(Math.max(0, count + n)));
+
+  // Poser ou retirer un personnage, avec sa voix. Seuls ces deux gestes le font parler :
+  // jamais au démarrage, avec « Nouvelle partie » ni avec l'annulation.
+  const withVoice =
+    (card: 'yusri' | 'zndrsplt' | 'okaun', voice: SoundName) => () => {
+      g.toggleBoard(card);
+      sounds.play(voice);
+    };
 
   // Pendant le dévoilement, on n'affiche que les lancers déjà « sortis »
   const revealCount = reveal ? reveal.count : game.lastSeries.length;
@@ -271,8 +281,8 @@ const CoinFlipApp = () => {
           <CharacterSlot
             size={art}
             present={board.yusri}
-            onPlace={() => g.toggleBoard('yusri')}
-            onRemove={() => g.toggleBoard('yusri')}
+          onPlace={withVoice('yusri', 'yusri_arrivee')}
+          onRemove={withVoice('yusri', 'yusri_depart')}
             onOpen={() => setOverlay('yusri')}
             onLaunch={() =>
               launch(() => g.launchYusri(yusriCount), reactYusri)
@@ -346,8 +356,8 @@ const CoinFlipApp = () => {
         <CharacterSlot
           size={art}
           present={board.zndrsplt}
-          onPlace={() => g.toggleBoard('zndrsplt')}
-          onRemove={() => g.toggleBoard('zndrsplt')}
+          onPlace={withVoice('zndrsplt', 'z_arrivee')}
+          onRemove={withVoice('zndrsplt', 'z_depart')}
           onOpen={() => setOverlay('z')}
           onLaunch={() => launch(g.launchZ, reactSerie)}
           badge={<Text style={styles.big}>{shownDraws}</Text>}
@@ -360,8 +370,8 @@ const CoinFlipApp = () => {
         <CharacterSlot
           size={art}
           present={board.okaun}
-          onPlace={() => g.toggleBoard('okaun')}
-          onRemove={() => g.toggleBoard('okaun')}
+          onPlace={withVoice('okaun', 'okaun_arrivee')}
+          onRemove={withVoice('okaun', 'okaun_depart')}
           onOpen={() => setOverlay('okaun')}
           onLaunch={() => launch(g.launchOkaun, reactSerie)}
           badge={

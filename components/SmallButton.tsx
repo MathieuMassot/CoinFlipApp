@@ -38,7 +38,6 @@ const SmallButton = ({
         : tone;
   const c = TONES[key];
   const fixed = width !== undefined || height !== undefined ? { width, height } : null;
-
   return (
     <Pressable
       onPress={onPress}
@@ -54,7 +53,8 @@ const SmallButton = ({
             style={[
               styles.face,
               fixed,
-              { backgroundColor: c.face, top: pressed ? BUTTON_DEPTH : 0 },
+              { backgroundColor: c.face },
+              pressed && styles.facePressed,
             ]}
           >
             <View style={styles.shine} />
@@ -90,6 +90,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+    // La face s'enfonce de l'épaisseur du bouton quand on appuie
+  facePressed: { top: BUTTON_DEPTH },
   // Reflet clair sur le haut de la face
   shine: {
     position: 'absolute',
