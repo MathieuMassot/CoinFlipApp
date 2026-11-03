@@ -28,7 +28,12 @@ import PouceDeKrark, { PouceEtat } from './components/characters/PouceDeKrark';
 import YusriArt, { YusriEtat } from './components/characters/YusriArt';
 import ZndrspltArt from './components/characters/ZndrspltArt';
 import { Flip } from './flip';
-import { GameEvent, okaunProgression } from './game';
+import {
+  GameEvent,
+  cardsFromFlip,
+  doublingsFromFlip,
+  okaunProgression,
+} from './game';
 import { loseHaptic } from './haptics';
 import { useGame } from './useGame';
 import { useReveal } from './useReveal';
@@ -120,6 +125,16 @@ const CoinFlipApp = () => {
       ? reveal.steps[Math.min(reveal.count, reveal.steps.length) - 1]
       : game.okaunNow;
 
+    // Ce qui n'est pas encore dévoilé ne doit apparaître nulle part
+  const unrevealed = game.lastSeries.slice(revealCount);
+  const shownDraws = Math.max(
+    0,
+    game.pendingDraws - unrevealed.reduce((n, f) => n + cardsFromFlip(f), 0),
+  );
+  const shownDoublings =
+    turn.doublings -
+    unrevealed.reduce((n, f) => n + doublingsFromFlip(f), 0);
+
   // Série d'Okaun ou du Z : le Pouce grossit à chaque réussite,
   // et s'affaisse si la série commence directement par un Lose
   const reactSerie = (flip: Flip, index: number) => {
@@ -206,7 +221,7 @@ const CoinFlipApp = () => {
         <SmallButton
           title="Fin de tour"
           onPress={g.endTurn}
-          disabled={turn.doublings === 0}
+          disabled={!board.okaun || shownDoublings <= 0}
         />
         <SmallButton title="↶" onPress={g.undo} disabled={!g.canUndo} />
       </View>
@@ -254,7 +269,7 @@ const CoinFlipApp = () => {
             onOpen={() => setOverlay('z')}
             onLaunch={() => launch(g.launchZ, reactSerie)}
             badge={
-              <Text style={styles.big}>À piocher : {game.pendingDraws}</Text>
+              <Text style={styles.big}>À piocher : {shownDraws}</Text>
             }
           >
             <ZndrspltArt size={ART} present={board.zndrsplt} />
@@ -428,7 +443,7 @@ const CoinFlipApp = () => {
           artSize={ART_BIG}
           art={<ZndrspltArt size={ART_BIG} present={board.zndrsplt} />}
         >
-          <Text style={styles.zNumber}>{game.pendingDraws}</Text>
+          <Text style={styles.zNumber}>{shownDraws}</Text>
           <Text style={styles.line}>cartes à piocher</Text>
           <SmallButton
             title="Pioché"

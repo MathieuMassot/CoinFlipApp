@@ -14,6 +14,8 @@ import {
   okaunProgression,
   recordFlipsWithEvents,
   adjustOkaun,
+  cardsFromFlip,
+  doublingsFromFlip,
 } from '../game';
 
 const win: Flip = { result: 'Win', coins: ['Win'] };
@@ -270,5 +272,23 @@ describe('Réglage d’Okaun', () => {
   it('ne descend pas sous zéro', () => {
     const s = adjustOkaun(withOkaun(), { power: -10, toughness: 0 }, true);
     expect(s.okaunNow.power).toBe(0);
+  });
+});
+
+describe('Ce que produit chaque lancer', () => {
+  it('cardsFromFlip suit exactement les cartes à piocher', () => {
+    let s = setBoard(newGame(), { zndrsplt: true });
+    s = play(s, [win, win, lose], 'yusri');
+    s = play(s, [win], 'manual', 'opponent');
+    const total = s.turn.flips.reduce((n, f) => n + cardsFromFlip(f), 0);
+    expect(total).toBe(s.pendingDraws);
+  });
+
+  it('doublingsFromFlip suit exactement les doublements d’Okaun', () => {
+    let s = setBoard(newGame(), { okaun: true });
+    s = play(s, [win, lose, win], 'okaun');
+    s = play(s, [win], 'manual', 'opponent');
+    const total = s.turn.flips.reduce((n, f) => n + doublingsFromFlip(f), 0);
+    expect(total).toBe(s.turn.doublings);
   });
 });

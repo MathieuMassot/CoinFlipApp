@@ -311,3 +311,15 @@ export const okaunProgression = (start: Stats, flips: Flip[]): Stats[] => {
   }
   return steps;
 };
+
+// Cartes à piocher produites par un lancer enregistré (même règle que recordFlips)
+export const cardsFromFlip = (f: RecordedFlip): number => {
+  if (f.player !== 'me' || f.result !== 'Win') {
+    return 0;
+  }
+  return (f.source === 'yusri' ? 1 : 0) + (f.board.zndrsplt ? 1 : 0);
+};
+
+// Doublements d'Okaun produits par un lancer enregistré
+export const doublingsFromFlip = (f: RecordedFlip): number =>
+  f.result === 'Win' && f.board.okaun ? 1 : 0;
